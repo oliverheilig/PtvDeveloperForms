@@ -20,7 +20,7 @@ namespace PtvDeveloperForms
 {
     public partial class Form1 : Form
     {
-        private static readonly string apiKey = ""; // Get your free key at https://developer.myptv.com/";
+        private static readonly string apiKey = ""; // Get your free key at https://developer.myptv.com/;
         public Form1()
         {
             InitializeComponent();
