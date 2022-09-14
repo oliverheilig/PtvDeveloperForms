@@ -45,6 +45,7 @@ namespace PtvDeveloperForms
                     RequestBuilderDelegate = (x, y, z) =>
                        $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silica&apiKey={apiKey}",
                 },
+                IsBaseMapLayer = true,
                 Copyright = "© 2022 PTV Group, HERE",
                 Caption = MapLocalizer.GetString(MapStringId.Background),
                 Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
