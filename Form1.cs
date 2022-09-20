@@ -51,15 +51,7 @@ namespace PtvDeveloperForms
                 Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
             });
 
-            var routingApi = new RoutingClient.Api.RoutingApi(new RoutingClient.Client.Configuration
-            {
-                ApiKey = new Dictionary<string, string>
-                {
-                    ["apiKey"] = apiKey
-                }
-            });
-
-            // The start and end location Karlsrhe -> Berlin
+            // The start and end locations Karlsrhe -> Berlin
             Point pStart = new Point(8.403951, 49.00921);
             Point pDest = new Point(13.408333, 52.518611);
 
@@ -73,6 +65,15 @@ namespace PtvDeveloperForms
 
             // Set the map focus
             formsMap1.SetEnvelope(new MapRectangle(pStart, pDest).Inflate(1.25));
+
+            // Initialize the routing client
+            var routingApi = new RoutingClient.Api.RoutingApi(new RoutingClient.Client.Configuration
+            {
+                ApiKey = new Dictionary<string, string>
+                {
+                    ["apiKey"] = apiKey
+                }
+            });
 
             // Calculate the route
             var routeResult = routingApi.CalculateRoutePost(new RouteRequest(waypoints: new List<Waypoint>
