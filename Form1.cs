@@ -4,7 +4,6 @@ using System.Windows.Forms;
 using RoutingClient.Model;
 using Ptv.XServer.Controls.Map.Symbols;
 using Ptv.XServer.Controls.Map.Layers.Shapes;
-using System.Windows.Controls;
 using Newtonsoft.Json;
 using System.Windows.Media;
 using Ptv.XServer.Controls.Map;
@@ -36,6 +35,7 @@ namespace PtvDeveloperForms
                 return;
             }
 
+            // Add the PTV-Developer raster map as base map
             formsMap1.Layers.Add(new TiledLayer("Raster")
             {
                 TiledProvider = new RemoteTiledProvider
@@ -51,9 +51,6 @@ namespace PtvDeveloperForms
                 Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
             });
 
-            shapeLayer = new ShapeLayer("Routing");
-            formsMap1.Layers.Add(shapeLayer);
-
             var routingApi = new RoutingClient.Api.RoutingApi(new RoutingClient.Client.Configuration
             {
                 ApiKey = new Dictionary<string, string>
@@ -62,15 +59,22 @@ namespace PtvDeveloperForms
                 }
             });
 
-            Point pStart = new Point(8.4, 49);
-            Point pDest = new Point(10, 50);
+            // The start and end location Karlsrhe -> Berlin
+            Point pStart = new Point(8.403951, 49.00921);
+            Point pDest = new Point(13.408333, 52.518611);
 
-            AddMarker(pStart, Colors.Green, "Start");
-            AddMarker(pDest, Colors.Red, "Destination");
+            // Create a new shape layer containing the route result
+            shapeLayer = new ShapeLayer("Routing");
+            formsMap1.Layers.Add(shapeLayer);
+            
+            // Add markers for start and destination
+            AddMarker(pStart, Colors.Green, "Karlsruhe");
+            AddMarker(pDest, Colors.Red, "Berlin");
 
-            // Set map focus
+            // Set the map focus
             formsMap1.SetEnvelope(new MapRectangle(pStart, pDest).Inflate(1.25));
 
+            // Calculate the route
             var routeResult = routingApi.CalculateRoutePost(new RouteRequest(waypoints: new List<Waypoint>
                 {
                     new Waypoint{OffRoad = new OffRoadWaypoint{Longitude = pStart.X, Latitude = pStart.Y}},
@@ -80,7 +84,7 @@ namespace PtvDeveloperForms
                     Results.POLYLINE,
             });
 
-            // result is GeoJson, need to parse it vis Json.NET
+            // The result is GeoJson, need to parse it vis Json.NET
             dynamic polyline = JsonConvert.DeserializeObject(routeResult.Polyline);
             var points = new PointCollection();
             foreach (var c in polyline.coordinates)
@@ -103,14 +107,12 @@ namespace PtvDeveloperForms
         }
         private void AddMarker(Point p, Color color, string toolTip)
         {
-
+            // craetae a pin-style symbol
             var pin = new Pin
             {
-                // Sets the color of the pin to green if it's the start waypoint. Otherwise red.
                 Color = color,
                 Width = 40,
                 Height = 40,
-                // Sets the name of the pin to Start it it's the start waypoint. Otherwise to End.
                 ToolTip = toolTip,
             };
 
@@ -121,8 +123,7 @@ namespace PtvDeveloperForms
             ShapeCanvas.SetAnchor(pin, LocationAnchor.RightBottom);
             ShapeCanvas.SetLocation(pin, p);
 
-
-            //// Adds the pin to the layer.
+            // Adds the pin to the layer.
             shapeLayer.Shapes.Add(pin);
         }
     }
