@@ -31,6 +31,10 @@ namespace PtvDeveloperForms
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.formsMap1 = new Ptv.XServer.Controls.Map.FormsMap();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // formsMap1
@@ -54,7 +58,7 @@ namespace PtvDeveloperForms
             this.formsMap1.ShowOverview = true;
             this.formsMap1.ShowScale = true;
             this.formsMap1.ShowZoomSlider = true;
-            this.formsMap1.Size = new System.Drawing.Size(1429, 902);
+            this.formsMap1.Size = new System.Drawing.Size(1429, 845);
             this.formsMap1.TabIndex = 0;
             this.formsMap1.UseAnimation = true;
             this.formsMap1.UseDefaultTheme = true;
@@ -65,15 +69,50 @@ namespace PtvDeveloperForms
             this.formsMap1.XMapUrl = "";
             this.formsMap1.ZoomLevel = 1D;
             // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.label1);
+            this.panel1.Controls.Add(this.comboBox1);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel1.Location = new System.Drawing.Point(0, 845);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(1429, 57);
+            this.panel1.TabIndex = 1;
+            // 
+            // comboBox1
+            // 
+            this.comboBox1.FormattingEnabled = true;
+            this.comboBox1.Items.AddRange(new object[] {
+            "Road",
+            "Satellite",
+            "Hybrid"});
+            this.comboBox1.Location = new System.Drawing.Point(126, 12);
+            this.comboBox1.Name = "comboBox1";
+            this.comboBox1.Size = new System.Drawing.Size(284, 33);
+            this.comboBox1.TabIndex = 0;
+            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(12, 15);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(108, 25);
+            this.label1.TabIndex = 1;
+            this.label1.Text = "Map Style";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1429, 902);
             this.Controls.Add(this.formsMap1);
+            this.Controls.Add(this.panel1);
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -81,6 +120,9 @@ namespace PtvDeveloperForms
         #endregion
 
         private Ptv.XServer.Controls.Map.FormsMap formsMap1;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.Label label1;
     }
 }
 

@@ -35,21 +35,11 @@ namespace PtvDeveloperForms
                 return;
             }
 
-            // Add the PTV-Developer raster map as base map
-            formsMap1.Layers.Add(new TiledLayer("Raster")
-            {
-                TiledProvider = new RemoteTiledProvider
-                {
-                    MinZoom = 0,
-                    MaxZoom = 22,
-                    RequestBuilderDelegate = (x, y, z) =>
-                       $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silica&apiKey={apiKey}",
-                },
-                IsBaseMapLayer = true,
-                Copyright = "© 2022 PTV Group, HERE",
-                Caption = MapLocalizer.GetString(MapStringId.Background),
-                Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
-            });
+            // Increase the number of parallel requests
+            System.Net.ServicePointManager.DefaultConnectionLimit = 8;
+
+            // initializes the map sytle
+            comboBox1.SelectedIndex = 0;
 
             // The start and end locations Karlsrhe -> Berlin
             Point pStart = new Point(8.403951, 49.00921);
@@ -126,6 +116,82 @@ namespace PtvDeveloperForms
 
             // Adds the pin to the layer.
             shapeLayer.Shapes.Add(pin);
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            formsMap1.Layers.Remove(formsMap1.Layers["Road"]);
+            formsMap1.Layers.Remove(formsMap1.Layers["Satellite"]);
+
+            switch (comboBox1.SelectedIndex)
+            {
+                case 0:
+                    // Add the PTV-Developer raster map as base map
+                    formsMap1.Layers.Add(new TiledLayer("Road")
+                    {
+                        TiledProvider = new RemoteTiledProvider
+                        {
+                            MinZoom = 0,
+                            MaxZoom = 22,
+                            RequestBuilderDelegate = (x, y, z) =>
+                               $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&apiKey={apiKey}",
+                        },
+                        IsBaseMapLayer = true,
+                        Copyright = "© 2022 PTV Group, HERE",
+                        Caption = MapLocalizer.GetString(MapStringId.Background),
+                        Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
+                    });
+                    break;
+                case 1:
+                    // Add the PTV-Developer satellite map as base map
+                    formsMap1.Layers.Add(new TiledLayer("Satellite")
+                    {
+                        TiledProvider = new RemoteTiledProvider
+                        {
+                            MinZoom = 0,
+                            MaxZoom = 20,
+                            RequestBuilderDelegate = (x, y, z) =>
+                               $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={apiKey}",
+                        },
+                        IsBaseMapLayer = true,
+                        Copyright = "© 2022 PTV Group, HERE",
+                        Caption = MapLocalizer.GetString(MapStringId.Aerials),
+                        Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Aerials.png")
+                    });
+                    break;
+                case 2:
+                    // Add the PTV-Developer satellite map as base map
+                    formsMap1.Layers.Add(new TiledLayer("Satellite")
+                    {
+                        TiledProvider = new RemoteTiledProvider
+                        {
+                            MinZoom = 0,
+                            MaxZoom = 20,
+                            RequestBuilderDelegate = (x, y, z) =>
+                               $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={apiKey}",
+                        },
+                        IsBaseMapLayer = true,
+                        Copyright = "© 2022 PTV Group, HERE",
+                        Caption = MapLocalizer.GetString(MapStringId.Aerials),
+                        Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Aerials.png")
+                    });
+                    // Add the PTV-Developer raster map as overlay
+                    formsMap1.Layers.Add(new TiledLayer("Road")
+                    {
+                        TiledProvider = new RemoteTiledProvider
+                        {
+                            MinZoom = 0,
+                            MaxZoom = 22,
+                            RequestBuilderDelegate = (x, y, z) =>
+                               $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&layers=transport,labels&apiKey={apiKey}",
+                        },
+                        IsBaseMapLayer = true,
+                        Copyright = "© 2022 PTV Group, HERE",
+                        Caption = MapLocalizer.GetString(MapStringId.Background),
+                        Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
+                    });
+                    break;
+            }
         }
     }
 }
