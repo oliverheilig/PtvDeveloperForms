@@ -11,6 +11,7 @@ using Ptv.XServer.Controls.Map.Layers.Tiled;
 using Ptv.XServer.Controls.Map.Localization;
 using Ptv.XServer.Controls.Map.TileProviders;
 using Ptv.XServer.Controls.Map.Tools;
+using System.Threading.Tasks;
 using Color = System.Windows.Media.Color;
 using Colors = System.Windows.Media.Colors;
 using Point = System.Windows.Point;
@@ -26,7 +27,7 @@ namespace PtvDeveloperForms
         }
 
         private ShapeLayer shapeLayer;
-        private void Form1_Load(object sender, EventArgs e)
+        private async void Form1_Load(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(apiKey))
             {
@@ -66,14 +67,14 @@ namespace PtvDeveloperForms
             });
 
             // Calculate the route
-            var routeResult = routingApi.CalculateRoutePost(new RouteRequest(waypoints: new List<Waypoint>
+            var routeResult = await routingApi.CalculateRoutePostAsync(new RouteRequest(waypoints: new List<Waypoint>
                 {
                     new Waypoint{OffRoad = new OffRoadWaypoint{Longitude = pStart.X, Latitude = pStart.Y}},
                     new Waypoint{OffRoad = new OffRoadWaypoint{Longitude = pDest.X, Latitude = pDest.Y}}
                 }),
                 results: new List<Results> {
                     Results.POLYLINE,
-            });
+            }, vehicle: new Vehicle { });
 
             // The result is GeoJson, need to parse it vis Json.NET
             dynamic polyline = JsonConvert.DeserializeObject(routeResult.Polyline);
