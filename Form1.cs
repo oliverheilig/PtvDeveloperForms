@@ -27,7 +27,7 @@ namespace PtvDeveloperForms
         }
 
         private ShapeLayer shapeLayer;
-        private async void Form1_Load(object sender, EventArgs e)
+        private void Form1_Load(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(apiKey))
             {
@@ -67,7 +67,7 @@ namespace PtvDeveloperForms
             });
 
             // Calculate the route
-            var routeResult = await routingApi.CalculateRoutePostAsync(new RouteRequest(waypoints: new List<Waypoint>
+            var routeResult = routingApi.CalculateRoutePost(new RouteRequest(waypoints: new List<Waypoint>
                 {
                     new Waypoint{OffRoad = new OffRoadWaypoint{Longitude = pStart.X, Latitude = pStart.Y}},
                     new Waypoint{OffRoad = new OffRoadWaypoint{Longitude = pDest.X, Latitude = pDest.Y}}
