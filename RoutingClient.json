@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "Routing",
-    "version": "1.13",
+    "version": "1.22",
     "description": "With the Routing service you can calculate routes from A to B taking into account vehicle-specific restrictions, traffic situations, toll, emissions, driver's working hours, service times and opening intervals.",
     "contact": {
       "url": "https://developer.myptv.com/"
@@ -31,7 +31,7 @@
           {
             "name": "waypoints",
             "in": "query",
-            "description": "The list of waypoints the route will be calculated for. At least two waypoints are necessary, a maximum number may apply according to your subscription.\nThe first waypoint is the start and the last is the destination of the route.\nAdditional intermediate waypoints are possible.  \nThe format of each waypoint is `<lat>,<lon>[;<attribute>;<attribute>;...]`\nrepresenting a point with the latitude value in degrees from south to north\nand the longitude value in degrees (WGS84/EPSG:4326) from west to east.\nThis point will be matched to the nearest possible road.  \nBy default the air-line connection between given and matched coordinates is not included in the route polyline, distance and duration.\nWe will refer to this type of waypoint as an _on-road waypoint_.\n\nThe behaviour of a waypoint can be changed by appending the following attributes:  \n * `includeLastMeters` to include the air-line connection between given and matched coordinates in the route polyline, distance and duration.\n We will refer to this type of waypoint as an _off-road waypoint_.\n * `roadAccess=<lat>,<lon>`, to use these coordinates for matching to the nearest road. Implies **includeLastMeter**, i.e.\n the air-line connection between the waypoint coordinates and the matched coordinates\n is included in the route polyline, distance and duration. This is useful if the waypoint should not be matched to the nearest possible road but to some road further away,\n e.g. garage exit at a different road.\n * `matchSideOfStreet`, specifies that this waypoint will be reached at the side of street on which it is located.\n This is useful to prevent the driver from crossing the street to actually reach the location represented by this waypoint.\n * `radius=<distance>`, influences the route course, so that the route passes an area defined by the given radius [m] (integer value).\n This waypoint will not appear as a waypoint event in the response and may not be used as start and destination.\n `radius` must be > 0 and is not compatible with any other attribute on the same waypoint except for `name`.\n We will refer to this type of waypoint as a _route-manipulation waypoint_.\n * `name=<name of waypoint>`, is an identifier to reference this waypoint in the response.\n * In order to influence the route course so that the route uses a specific ferry or railway connection between two locations the waypoint is formatted as follows:\n `combinedTransport=<lat>,<lon>,<lat>,<lon>`. Both locations will be matched to the nearest ports looking for a direct connection.\n If no connection can be found, this waypoint will be ignored, and the warning _ROUTING_COMBINED_TRANSPORT_WAYPOINT_IGNORED_ will be returned.\n If more than one connection is found, the best one will be used,\n and the alternative connections will be returned in the response in a warning _ROUTING_COMBINED_TRANSPORT_WAYPOINT_AMBIGUOUS_.\n This waypoint will not appear as a waypoint event in the response and may not be used as start or destination.\n We will refer to this type of waypoint as a _combined-transport waypoint_.\n\n See [here](./Concepts/Waypoints.htm) for more information.",
+            "description": "The list of waypoints the route will be calculated for. At least two waypoints are necessary, a maximum number may apply according to your subscription.\nThe first waypoint is the start and the last is the destination of the route.\nAdditional intermediate waypoints are possible.  \nThe format of each waypoint is `<lat>,<lon>[;<attribute>;<attribute>;...]`\nrepresenting a point with the latitude value in degrees from south to north\nand the longitude value in degrees (WGS84/EPSG:4326) from west to east.\nThis point will be matched to the nearest possible road.  \nBy default the air-line connection between given and matched coordinates is not included in the route polyline, distance and duration.\nWe will refer to this type of waypoint as an _on-road waypoint_.\n\nThe behaviour of a waypoint can be changed by appending the following attributes:  \n * `includeLastMeters` to include the air-line connection between given and matched coordinates in the route polyline, distance and duration.\n We will refer to this type of waypoint as an _off-road waypoint_.\n * `roadAccess=<lat>,<lon>`, to use these coordinates for matching to the nearest road. Implies **includeLastMeters**, i.e.\n the air-line connection between the waypoint coordinates and the matched coordinates\n is included in the route polyline, distance and duration. This is useful if the waypoint should not be matched to the nearest possible road but to some road further away,\n e.g. garage exit at a different road.\n * `matchSideOfStreet`, specifies that this waypoint will be reached at the side of street on which it is located.\n This is useful to prevent the driver from crossing the street to actually reach the location represented by this waypoint.\n * `radius=<distance>`, influences the route course, so that the route passes an area defined by the given radius [m] (integer value).\n This waypoint will not appear as a waypoint event in the response and may not be used as start and destination.\n `radius` must be > 0 and is not compatible with any other attribute on the same waypoint except for `name`.\n We will refer to this type of waypoint as a _route-manipulation waypoint_.\n * `name=<name of waypoint>`, is an identifier to reference this waypoint in the response.\n * In order to influence the route course so that the route uses a specific ferry or railway connection between two locations the waypoint is formatted as follows:\n `combinedTransport=<lat>,<lon>,<lat>,<lon>`. Both locations will be matched to the nearest ports looking for a direct connection.\n If no connection can be found, this waypoint will be ignored, and the warning _ROUTING_COMBINED_TRANSPORT_WAYPOINT_IGNORED_ will be returned.\n If more than one connection is found, the best one will be used,\n and the alternative connections will be returned in the response in a warning _ROUTING_COMBINED_TRANSPORT_WAYPOINT_AMBIGUOUS_.\n This waypoint will not appear as a waypoint event in the response and may not be used as start or destination.\n We will refer to this type of waypoint as a _combined-transport waypoint_.\n\n See [here](./concepts/waypoints) for more information.",
             "style": "form",
             "explode": true,
             "schema": {
@@ -162,7 +162,7 @@
           {
             "name": "routeId",
             "in": "path",
-            "description": "Route ID returned from a previous route calculation or alternative route.",
+            "description": "The route ID returned from a previous route calculation or alternative route.",
             "required": true,
             "schema": {
               "type": "string",
@@ -194,6 +194,76 @@
         }
       }
     },
+    "/eta/{routeId}": {
+      "get": {
+        "tags": [
+          "Routing"
+        ],
+        "description": "Calculates the estimated time of arrival (ETA) based on a previously calculated route and the current position of the vehicle.",
+        "operationId": "getEstimatedTimeOfArrival",
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "description": "The route id returned from a previous route calculation.  \nMake sure to assign unique names to all off-road and on-road waypoints in the request to obtain the route id.\nOtherwise, the route id cannot be used for ETA calculation because the waypoints cannot be identified. Furthermore,\nthe route id must not contain route-manipulation waypoints, combined-transport waypoints or vehicle parameters at waypoints.\n",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "waypoint",
+            "in": "query",
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/PositionAtWaypoint"
+            },
+            "explode": true
+          },
+          {
+            "name": "position",
+            "in": "query",
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/PositionOnRoute"
+            },
+            "explode": true
+          },
+          {
+            "name": "workLogbook",
+            "in": "query",
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/WorkLogbook"
+            },
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response on success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EtaResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Response on failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reachable-areas": {
       "get": {
         "tags": [
@@ -206,7 +276,7 @@
             "name": "waypoint",
             "in": "query",
             "required": true,
-            "description": "The start or destination waypoint.\nThe format of the waypoint is `<lat>,<lon>[;<attribute>;<attribute>;...]`\nrepresenting a point with the latitude value in degrees from south to north\nand the longitude value in degrees (WGS84/EPSG:4326) from west to east.\nThis point will be matched to the nearest possible road.\nBy default the air-line connection between given and matched coordinates is not included in the distance or duration.\nWe will refer to this type of waypoint as an _on-road waypoint_.\n\nThe behaviour of a waypoint can be changed by appending the following attributes:\n  * `includeLastMeters` to include the air-line connection between given and matched coordinates in the distance or duration.\n  We will refer to this type of waypoint as an _off-road waypoint_.\n  * `roadAccess=<lat>,<lon>`, to use these coordinates for matching to the nearest road. Implies **includeLastMeter**, i.e.\n  the air-line connection between the waypoint coordinates and the matched coordinates\n  is included in the distance or duration. This is useful if the waypoint should not be matched to the nearest possible road but to some road further away,\n  e.g. garage exit at a different road.\n\nSee [here](./Concepts/Waypoints.htm) for more information.",
+            "description": "The start or destination waypoint.\nThe format of the waypoint is `<lat>,<lon>[;<attribute>;<attribute>;...]`\nrepresenting a point with the latitude value in degrees from south to north\nand the longitude value in degrees (WGS84/EPSG:4326) from west to east.\nThis point will be matched to the nearest possible road.\nBy default the air-line connection between given and matched coordinates is not included in the distance or duration.\nWe will refer to this type of waypoint as an _on-road waypoint_.\n\nThe behaviour of a waypoint can be changed by appending the following attributes:\n  * `includeLastMeters` to include the air-line connection between given and matched coordinates in the distance or duration.\n  We will refer to this type of waypoint as an _off-road waypoint_.\n  * `roadAccess=<lat>,<lon>`, to use these coordinates for matching to the nearest road. Implies **includeLastMeters**, i.e.\n  the air-line connection between the waypoint coordinates and the matched coordinates\n  is included in the distance or duration. This is useful if the waypoint should not be matched to the nearest possible road but to some road further away,\n  e.g. garage exit at a different road.\n\nSee [here](./concepts/waypoints) for more information.",
             "schema": {
               "type": "string"
             }
@@ -497,7 +567,7 @@
       "WaypointParameter": {
         "name": "waypoint",
         "in": "query",
-        "description": "The start or destination waypoint.\nThe format of the waypoint is `<lat>,<lon>[;<attribute>;<attribute>;...]`\nrepresenting a point with the latitude value in degrees from south to north\nand the longitude value in degrees (WGS84/EPSG:4326) from west to east.\nThis point will be matched to the nearest possible road.\nBy default the air-line connection between given and matched coordinates is not included in the distance or duration.\nWe will refer to this type of waypoint as an _on-road waypoint_.\n\nThe behaviour of a waypoint can be changed by appending the following attributes:\n  * `includeLastMeters` to include the air-line connection between given and matched coordinates in the distance or duration.\n  We will refer to this type of waypoint as an _off-road waypoint_.\n  * `roadAccess=<lat>,<lon>`, to use these coordinates for matching to the nearest road. Implies **includeLastMeter**, i.e.\n  the air-line connection between the waypoint coordinates and the matched coordinates\n  is included in the distance or duration. This is useful if the waypoint should not be matched to the nearest possible road but to some road further away,\n  e.g. garage exit at a different road.\n\nSee [here](./Concepts/Waypoints.htm) for more information.",
+        "description": "The start or destination waypoint.\nThe format of the waypoint is `<lat>,<lon>[;<attribute>;<attribute>;...]`\nrepresenting a point with the latitude value in degrees from south to north\nand the longitude value in degrees (WGS84/EPSG:4326) from west to east.\nThis point will be matched to the nearest possible road.\nBy default the air-line connection between given and matched coordinates is not included in the distance or duration.\nWe will refer to this type of waypoint as an _on-road waypoint_.\n\nThe behaviour of a waypoint can be changed by appending the following attributes:\n  * `includeLastMeters` to include the air-line connection between given and matched coordinates in the distance or duration.\n  We will refer to this type of waypoint as an _off-road waypoint_.\n  * `roadAccess=<lat>,<lon>`, to use these coordinates for matching to the nearest road. Implies **includeLastMeters**, i.e.\n  the air-line connection between the waypoint coordinates and the matched coordinates\n  is included in the distance or duration. This is useful if the waypoint should not be matched to the nearest possible road but to some road further away,\n  e.g. garage exit at a different road.\n\nSee [here](./concepts/waypoints) for more information.",
         "schema": {
           "type": "string"
         }
@@ -505,7 +575,7 @@
       "RouteIdParameter": {
         "name": "routeId",
         "in": "query",
-        "description": "Instead of the waypoint mentioned above, a **routeId** from a previously calculated route or a matched track can be entered.\nSee [here](./Concepts/Waypoints.htm) for more information.",
+        "description": "Instead of the waypoint mentioned above, a **routeId** from a previously calculated route or a matched track can be entered.\nMore information and applying restrictions can be found [here](./concepts/waypoints).",
         "schema": {
           "type": "string",
           "format": "uuid"
@@ -570,7 +640,7 @@
       "ProfileParameter": {
         "name": "profile",
         "in": "query",
-        "description": "A profile defines a vehicle by a set of attributes, matching typical transport situations.\nIt must be the name of one of the [predefined profiles](../Data%20API/Concepts/Profiles.htm) such as _EUR_TRAILER_TRUCK_.\n\nIf the attributes of the profile, do not fit to your vehicle, the values can be changed by the corresponding attributes in the **vehicle** parameter (only available for routing).",
+        "description": "A profile defines a vehicle by a set of attributes, matching typical transport situations.\nIt must be the name of one of the [predefined profiles](../data-api/concepts/profiles) such as _EUR_TRAILER_TRUCK_.\n\nIf this parameter is not specified and the first waypoint or the routeId is located in the Americas,\n_USA_8_SEMITRAILER_5AXLE_ is used as the default instead of _EUR_TRAILER_TRUCK_.\n\nIf the first waypoint or the routeId is located in the Americas but a non-American profile is specified or vice-versa, a warning is returned (routing only).\nAlways use a profile which matches the region of the waypoints to obtain best results.\n\nIf the attributes of the profile do not fit to your vehicle, the values can be changed by the corresponding attributes in the **vehicle** parameter (routing only).",
         "schema": {
           "$ref": "#/components/schemas/Profile"
         }
@@ -578,7 +648,7 @@
       "VehicleParameter": {
         "name": "vehicle",
         "in": "query",
-        "description": "Physical and legal properties of the vehicle such as its dimensions to alter the values of the selected profile.\nThese parameters will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.\nUse array notation like `vehicle[emissionStandard]=EURO_5` to set vehicle attributes.",
+        "description": "Physical and legal properties of the vehicle such as its dimensions to override the values of the selected **profile**.\n\nThese parameters will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.\nUnsupported parameters such as **electricityType** for combustion vehicles should not be specified in the request.\n\nUse array notation like `vehicle[emissionStandard]=EURO_5` to set vehicle attributes.",
         "required": false,
         "style": "deepObject",
         "schema": {
@@ -622,7 +692,7 @@
       "ResultsParameter": {
         "name": "results",
         "in": "query",
-        "description": "Comma-separated list that defines which results will be returned.\n_TOLL_COSTS_, _TOLL_SECTIONS_, _TOLL_SYSTEMS_ and _TOLL_EVENTS_ will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.\nFor electric vehicles and non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_ all emission values will be 0.\n * `ROUTE_ID`\n    Response includes the route ID for recalculation.\n * `LEGS`\n    Response includes information about the route **legs** defined as the parts of the route between two consecutive waypoints.\n * `LEGS_POLYLINE`\n    Response includes the **polyline**s of the single **legs** in the format specified by **options[polylineFormat]**. _LEGS_ will automatially be included.\n * `TOLL_COSTS`\n    Response includes the toll **costs** of the route.\n * `TOLL_SECTIONS`\n    Response includes the list of toll **sections** defined by the toll operators.\n * `TOLL_SYSTEMS`\n    Response includes the list of toll **systems** defined by the toll operators.\n * `TOLL_EVENTS`\n    Response includes **events** when a toll road is entered, exited or a toll booth is passed.\n * `POLYLINE`\n    Response includes the complete **polyline** of the entire route in the format specified by **options[polylineFormat]**.\n * `MANEUVER_EVENTS`\n    Response includes **events** for a **maneuver** when the driver has to take an action, e.g. turn left or right.\n * `BORDER_EVENTS`\n    Response includes **events** when a **border** of a country or subdivision is crossed by the route.\n * `VIOLATION_EVENTS`\n    Response includes **events** when the route contains a **violation**, e.g. entering or exiting an area where passing with the current vehicle is prohibited.\n * `VIOLATION_EVENTS_POLYLINE`\n    The response contains the polylines on which route violations occur. _VIOLATION_EVENTS_ will automatially be included.\n * `WAYPOINT_EVENTS`\n    Response includes **events** when a **waypoint** is reached by the route.\n * `UTC_OFFSET_CHANGE_EVENTS`\n    Response includes **events** when the offset to UTC changes (**utcOffsetChange**).\n * `COMBINED_TRANSPORT_EVENTS`\n    Response includes **events** when a combined transport is entered or exited.\n * `TRAFFIC_EVENTS`\n    Response includes **events** when a traffic incident such as a traffic jam is reached by the route.\n * `SCHEDULE_EVENTS`\n    Response includes **events** when the driver has to take a break or a rest, perform service or wait for a waypoint to open (**schedule**), POST only.\n * `EMISSIONS_EN16258_2012`\n    Response includes information on **emissions** (**EN16258_2012**) calculated according to EN16258 from 2012 (a.k.a. CEN) based on the total fuel consumption for this route.\n    All fuel types are supported, for _GASOLINE_ and _DIESEL_ an arbitrary **bioFuelRatio** is supported.\n    It is mutually exclusive with **EMISSIONS_EN16258_2012_HBEFA**.\n * `EMISSIONS_EN16258_2012_HBEFA`\n    Response includes information on **emissions** (**EN16258_2012**) calculated according to EN16258 from 2012 (a.k.a. CEN) based on the total fuel consumption for this route\n    which is automatically calculated through HBEFA 4.1. The **averageFuelConsumption** will be ignored. All fuel types\n    are supported, for _GASOLINE_ and _DIESEL_ an arbitrary **bioFuelRatio** is supported.\n    It is mutually exclusive with **EMISSIONS_EN16258_2012**.\n * `EMISSIONS_FRENCH_CO2E_DECREE_2017_639`\n    Response includes information on **emissions** (**French_CO2e_Decree_2017_639**) calculated according to the French CO2E decree from 2017 based on the total fuel consumption for this route.\n    All fuel types are supported, for _GASOLINE_ a **bioFuelRatio** of\n    _0_, _10_ and _85_ is supported, for _DIESEL_ _0_ and _30_.\n * `ALTERNATIVE_ROUTES`\n    Response includes up to three alternatives in addition to the optimal route. Only supported when exactly two on-road or off-road waypoints are specified. Please note that the additional calculations will degrade the performance.  \n    Cannot be used with **options[routingMode]=MONETARY**.\n * `SCHEDULE_REPORT`\n    Response includes the **scheduleReport** which provides an overview of the times of the schedule of this route including break and rest times, POST only.\n * `GUIDED_NAVIGATION`\n    Response includes the guided navigation information for the [PTV Navigator](https://www.myptv.com/en/logistics-software/ptv-navigator).  \n    See [here](./Concepts/GuidedNavigationRoute.htm) for more information.\n * `MONETARY_COSTS`\n    Response includes a report with monetary costs for the route. See [here](./Concepts/Monetary%20Costs.htm) for more information.",
+        "description": "Comma-separated list that defines which results will be returned.\n_TOLL_COSTS_, _TOLL_SECTIONS_, _TOLL_SYSTEMS_ and _TOLL_EVENTS_ will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.\nFor electric vehicles and non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_ all emission values will be 0.\n * `ROUTE_ID`\n    Response includes the route ID for recalculation.\n * `LEGS`\n    Response includes information about the route **legs** defined as the parts of the route between two consecutive waypoints.\n * `LEGS_POLYLINE`\n    Response includes the **polyline** of each of the **legs** in the format specified by **options[polylineFormat]**. _LEGS_ will automatically be included.\n * `TOLL_COSTS`\n    Response includes the toll **costs** of the route.\n * `TOLL_SECTIONS`\n    Response includes the list of toll **sections** defined by the toll operators.\n * `TOLL_SYSTEMS`\n    Response includes the list of toll **systems** defined by the toll operators.\n * `TOLL_EVENTS`\n    Response includes **events** when a toll road is entered, exited or a toll booth is passed.\n * `POLYLINE`\n    Response includes the complete **polyline** of the entire route in the format specified by **options[polylineFormat]**.\n * `MANEUVER_EVENTS`\n    Response includes **events** for a **maneuver** when the driver has to take an action, e.g. turn left or right.\n * `BORDER_EVENTS`\n    Response includes **events** when a **border** of a country or subdivision is crossed by the route.\n * `VIOLATION_EVENTS`\n    Response includes **events** when the route contains a **violation**, e.g. entering or exiting an area where passing with the current vehicle is prohibited.\n * `VIOLATION_EVENTS_POLYLINE`\n    The response contains the **polyline** of each route violation. _VIOLATION_EVENTS_ will automatically be included.\n * `WAYPOINT_EVENTS`\n    Response includes **events** when a **waypoint** is reached by the route.\n * `UTC_OFFSET_CHANGE_EVENTS`\n    Response includes **events** when the offset to UTC changes (**utcOffsetChange**).\n * `COMBINED_TRANSPORT_EVENTS`\n    Response includes **events** when a combined transport is entered or exited.\n * `TRAFFIC_EVENTS`\n    Response includes **events** when a traffic incident such as a traffic jam is reached by the route.\n * `TRAFFIC_EVENTS_POLYLINE`\n    The response contains the **polyline** of each traffic events. _TRAFFIC_EVENTS_ will automatically be included.\n * `SCHEDULE_EVENTS`\n    Response includes **events** when the driver has to take a break or a rest, perform service or wait for a waypoint to open (**schedule**), POST only.\n * `EMISSIONS_EN16258_2012`\n    Response includes information on **emissions** (**EN16258_2012**) calculated according to EN16258 from 2012 (a.k.a. CEN) based on the total fuel consumption for this route.\n    Only vehicles with **engineType** _COMBUSTION_ and **fuelType** _GASOLINE_, _DIESEL_, _COMPRESSED_NATURAL_GAS_ or _LIQUEFIED_PETROLEUM_GAS_ are supported.\n    For _GASOLINE_ and _DIESEL_, an arbitrary **bioFuelRatio** is supported.\n    This is a European emission standard which should only be used with [European profiles](../data-api/concepts/profiles).\n    It is mutually exclusive with **EMISSIONS_EN16258_2012_HBEFA**.\n * `EMISSIONS_EN16258_2012_HBEFA`\n    Response includes information on **emissions** (**EN16258_2012**) calculated according to EN 16258 from 2012 (a.k.a. CEN) based on the total fuel consumption for this route\n    which is automatically calculated through HBEFA 4.2. The **averageFuelConsumption** will be ignored.\n    This is a European emission standard which should only be used with [European profiles](../data-api/concepts/profiles).\n    Supported vehicles are the same as those of _EMISSIONS_EN16258_2012_.\n    It is mutually exclusive with **EMISSIONS_EN16258_2012**.\n * `EMISSIONS_ISO14083_2022`\n    Draft version of ISO 14083:2023. See **EMISSIONS_ISO14083_2023** for more information.\n * `EMISSIONS_ISO14083_2022_DEFAULT_CONSUMPTION`\n    Draft version of ISO 14083:2023. See **EMISSIONS_ISO14083_2023_DEFAULT_CONSUMPTION** for more information.\n * `EMISSIONS_ISO14083_2023`\n    Response includes information on **emissions** (**ISO14083_2023**) calculated according to ISO 14083:2023 (a.k.a. ISO) based on the total fuel and electricity consumption for this route.\n    Only supported for [European and American profiles](../data-api/concepts/profiles). Emissions are calculated using the respective factors.\n    All fuel and electricity types are supported, for _GASOLINE_ and _DIESEL_ an arbitrary **bioFuelRatio** is supported.\n    For **engineType** _HYBRID_ or **engineType** _COMBUSTION_ with **fuelType** _CNG_GASOLINE_ or _LPG_GASOLINE_, an arbitrary **hybridRatio** is supported.\n    It is mutually exclusive with all other ISO14083 calculations.\n * `EMISSIONS_ISO14083_2023_DEFAULT_CONSUMPTION`\n    Response includes information on **emissions** (**ISO14083_2023**) calculated according to ISO 14083:2023 (a.k.a. ISO) for based on the default fuel and electricity consumption for this route\n    which is automatically calculated through HBEFA 4.2. The **averageFuelConsumption** and **averageElectricityConsumption** will be ignored.\n    Only supported for [European profiles](../data-api/concepts/profiles). Emissions are calculated using the European factors.\n    Supported vehicles are the same as those of _EMISSIONS_ISO14083_2023_.\n    It is mutually exclusive with all other ISO14083 calculations.\n * `EMISSIONS_FRENCH_CO2E_DECREE_2017_639`\n    Response includes information on **emissions** (**French_CO2e_Decree_2017_639**) calculated according to the French CO2E decree from 2017 based on the total fuel consumption for this route.\n    Only vehicles with **engineType** _COMBUSTION_ and **fuelType** _GASOLINE_, _DIESEL_, _COMPRESSED_NATURAL_GAS_ or _LIQUEFIED_PETROLEUM_GAS_ are supported.\n    For _GASOLINE_ a **bioFuelRatio** of _0_, _10_ and _85_ is supported, for _DIESEL_ _0_ and _30_.\n    This is a European emission standard which should only be used with [European profiles](../data-api/concepts/profiles).\n * `ALTERNATIVE_ROUTES`\n    Response includes up to three alternatives in addition to the optimal route. Only supported when exactly two on-road or off-road waypoints are specified. Please note that the additional calculations will degrade the performance.  \n    Cannot be used with **options[routingMode]=MONETARY**.\n * `SCHEDULE_REPORT`\n    Response includes the **scheduleReport** which provides an overview of the times of the schedule of this route including break and rest times, POST only.\n * `GUIDED_NAVIGATION`\n    Response includes the guided navigation information for the [PTV Navigator](https://www.myptv.com/en/logistics-software/ptv-navigator).  \n    See [here](./concepts/guided-navigation) for more information.\n * `MONETARY_COSTS`\n    Response includes a report with monetary costs for the route. See [here](./concepts/monetary-costs) for more information.",
         "style": "form",
         "explode": false,
         "schema": {
@@ -638,144 +708,258 @@
       }
     },
     "schemas": {
-      "TruckRoutes": {
-        "type": "string",
-        "example": "SE_BK_1",
-        "enum": [
-          "DE_LKWUEBERLSTVAUSNV",
-          "NL_LZV",
-          "SE_BK_1",
-          "SE_BK_2",
-          "SE_BK_3",
-          "SE_BK_4",
-          "US_STAA",
-          "US_TD",
-          "AU_B_DOUBLE",
-          "AU_B_TRIPLE"
-        ],
-        "x-enum-varnames": [
-          "DE_LKWUEBERLSTVAUSNV",
-          "NL_LZV",
-          "SE_BK_1",
-          "SE_BK_2",
-          "SE_BK_3",
-          "SE_BK_4",
-          "US_STAA",
-          "US_TD",
-          "AU_B_DOUBLE",
-          "AU_B_TRIPLE"
-        ]
+      "Vehicle": {
+        "type": "object",
+        "properties": {
+          "engineType": {
+            "$ref": "#/components/schemas/EngineType"
+          },
+          "fuelType": {
+            "$ref": "#/components/schemas/FuelType"
+          },
+          "electricityType": {
+            "$ref": "#/components/schemas/ElectricityType"
+          },
+          "averageFuelConsumption": {
+            "nullable": true,
+            "description": "The average fuel consumption of the vehicle.\nDepending on the **fuelType** [l/100km] for liquid fuel types or [kg/100km] for gaseous fuel types.\n\nSupported for **engineType** _COMBUSTION_  or _HYBRID_. Relevant for `emissions`.\n",
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 35
+          },
+          "averageElectricityConsumption": {
+            "nullable": true,
+            "description": "The average power consumption of the vehicle [kWh/100km].\n\nSupported for **engineType** _ELECTRIC_ or _HYBRID_. Relevant for `emissions`.\n",
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 115
+          },
+          "bioFuelRatio": {
+            "nullable": true,
+            "description": "The ratio of biofuel to conventional fuel [%], i.e. 10 for E10 with 10% biofuel.\n\nSupported for **engineType** _COMBUSTION_ or _HYBRID_ and only for the fuel types _GASOLINE_, _DIESEL_, _CNG_GASOLINE_ and _LNG_GASOLINE_.\nRelevant for `emissions`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 0
+          },
+          "hybridRatio": {
+            "nullable": true,
+            "description": "Electric energy usage ratio from the total amount of energy consumed by the vehicle.\n\nSupported for **engineType** _HYBRID_. Relevant for `emissions`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 99,
+            "example": 50
+          },
+          "dualFuelRatio": {
+            "nullable": true,
+            "description": "Ratio of CNG or LPG usage from the total amount of fuel consumption.\n\nSupported for **engineType** _COMBUSTION_ with **fuelType**  _CNG_GASOLINE_ or _LPG_GASOLINE_. Relevant for `emissions`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 99,
+            "example": 50
+          },
+          "cylinderCapacity": {
+            "nullable": true,
+            "description": "The cylinder capacity of the vehicle [cm&#x00B3;]. This value is present for compatibility reasons and does not influence\nany of the results.\n\nSupported for **engineType** _COMBUSTION_ or _HYBRID_.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 12000
+          },
+          "emissionStandard": {
+            "$ref": "#/components/schemas/EmissionStandard"
+          },
+          "co2EmissionClass": {
+            "nullable": true,
+            "description": "The CO&#8322; emission class valid in the European Union. See also the \n[Directive 1999/62/EC](https://eur-lex.europa.eu/eli/dir/1999/62) of the European Parliament and of the \nCouncil on the charging of heavy goods vehicles for the use of certain infrastructures, article 7ga.\n\nRelevant for `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 5,
+            "example": 1
+          },
+          "lowEmissionZoneTypes": {
+            "nullable": true,
+            "description": "Comma-separated list of the low-emission zone types of the vehicle.\nFor now, types are available only for Germany, so using more than one value is not meaningful.\n\nAvailable values are provided by type `LowEmissionZoneTypes`: \"DE_GREEN\" \"DE_YELLOW\" \"DE_RED\" \"DE_NONE\" \n\nRelevant for `routing`.\n",
+            "type": "string"
+          },
+          "particleReductionClass": {
+            "$ref": "#/components/schemas/ParticleReductionClass"
+          },
+          "emptyWeight": {
+            "nullable": true,
+            "description": "The empty weight of the vehicle [kg].\n\nRelevant for `routing`, `emissions`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 15000
+          },
+          "loadWeight": {
+            "nullable": true,
+            "description": "The weight of the vehicle's load [kg].\n\nRelevant for `routing`, `emissions`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "example": 25000
+          },
+          "totalPermittedWeight": {
+            "nullable": true,
+            "description": "The total permitted weight of the vehicle and load [kg].\n\nRelevant for `routing`, `toll`, `emissions`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 40000
+          },
+          "axleWeight": {
+            "nullable": true,
+            "description": "The maximum distributed weight that may be supported by an axle of the vehicle [kg].\n\nRelevant for `routing`, `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 11500
+          },
+          "numberOfAxles": {
+            "nullable": true,
+            "description": "The total number of axles of the vehicle including the trailers.\n\nRelevant for `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 5
+          },
+          "numberOfTires": {
+            "nullable": true,
+            "description": "The total number of tires of the vehicle including the trailers.\n\nRelevant for `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 10
+          },
+          "height": {
+            "nullable": true,
+            "description": "The height of the vehicle [cm].\n\nRelevant for `routing`, `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 400
+          },
+          "heightAboveFrontAxle": {
+            "nullable": true,
+            "description": "The height above the front axle [cm].\n\nRelevant for `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 400
+          },
+          "length": {
+            "nullable": true,
+            "description": "The length of the vehicle [cm].\n\nRelevant for `routing`, `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 1650
+          },
+          "width": {
+            "nullable": true,
+            "description": "The width of the vehicle [cm].\n\nRelevant for `routing`, `toll`.\n",
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "example": 254
+          },
+          "hazardousMaterials": {
+            "nullable": true,
+            "description": "Comma-separated list of hazardous materials the vehicle has loaded. If _NONE_ is specified along with\nother hazardous materials it is ignored. Depending on the load the route will avoid roads prohibited\nfor and/or prefer roads prescribed for specific hazardous materials.\n\nAvailable values are provided by type `HazardousMaterials`: \"HAZARDOUS_TO_WATER\" \"EXPLOSIVE\" \"FLAMMABLE\" \"RADIOACTIVE\" \"INHALATION_HAZARD\" \"MEDICAL_WASTE\" \"OTHER\" \"NONE\"\n\nRelevant for `routing`.\n",
+            "type": "string"
+          },
+          "tunnelRestrictionCode": {
+            "$ref": "#/components/schemas/TunnelRestrictionCode"
+          },
+          "truckRoutes": {
+            "$ref": "#/components/schemas/TruckRoutesList"
+          },
+          "commercial": {
+            "nullable": true,
+            "description": "Specifies if the vehicle usage is commercial.\n\nRelevant for `toll`.\n",
+            "type": "boolean",
+            "example": false
+          },
+          "etcSubscriptions": {
+            "nullable": true,
+            "description": "A comma separated list of ETC Subscriptions.\nSee [here](./concepts/electronic-toll-collection) for more information on available subscriptions.\n\nAvailable values are provided by type `EtcSubscriptionTypes`: \"AT_GOBOX\" \"BE_TELETOL\" \"BE_VIAPASS\" \"CH_LSVA\" \"DE_QUICKBOX\" \"DE_TOLLCOLLECT\" \"DE_WARNOWTUNNEL_RFID\" \"DK_BROPAS_BUSINESS\" \"IT_TELEPASS\" \"NL_TELECARD\" \"NL_TTAG\" \"NO_AUTOPASS\" \"PT_VIA_VERDE\" \"US_APASS\" \"US_BREEZEBY\" \"US_DOWNBEACH_EXPRESSPASS\" \"US_EPASS\" \"US_EXPRESSACCOUNT\" \"US_EXPRESSCARD\" \"US_EXPRESSPASS\" \"US_EXPRESSTOLL\" \"US_EZPASS\" \"US_EZTAG\" \"US_FASTRAK\" \"US_GEAUXPASS\" \"US_GOODTOGO\" \"US_GOPASS\" \"US_IPASS\" \"US_KTAG\" \"US_LEEWAY\" \"US_MACKINACBRIDGE_MACPASS\" \"US_MARYLAND_EZPASS\" \"US_MASSACHUSETTS_EZPASS\" \"US_NC_QUICKPASS\" \"US_NEWHAMPSHIRE_EZPASS\" \"US_NEWJERSEY_EZPASS\" \"US_NEWYORK_EZPASS\" \"US_NEXPRESS\" \"US_OHIO_EZPASS\" \"US_PALPASS\" \"US_PIKEPASS\" \"US_RIVERLINK\" \"US_RIVERLINK_NOTRANSPONDER\" \"US_SEAWAYTRANSITCARD\" \"US_SUNPASS\" \"US_TOLLTAG\" \"US_TXTAG\" \"US_VIRGINIA_EZPASS\" \"US_WESTVIRGINIA_EZPASS\" \"US_PEACHPASS\" \"US_NEXUS\" \"US_DELAWARE_EZPASS\" \"US_GROSSEILETOLLBRIDGE_PASSTAG\" \"US_EZPASS_PAYBYPLATE\"\n\nRelevant for `toll`.\n",
+            "type": "string"
+          }
+        }
       },
-      "TunnelRestrictionCode": {
+      "EngineType": {
         "type": "string",
-        "example": "NONE",
-        "description": "The tunnel restriction code according to ADR (European Agreement Concerning the International Carriage of Dangerous Goods by Road) depending on the load of the vehicle.\nRelevant for `routing`.\n",
+        "description": "The engine type of the vehicle.\nWhen changing the engine type further parameters must be specified to define a valid vehicle and to\nobtain proper results. For a hybrid or an electric vehicle **electricityType** and **averageElectricityConsumption**\nmust be specified, for a hybrid vehicle additionally the **hybridRatio**.\n\nRelevant for `toll`, `emissions`.\n",
+        "example": "COMBUSTION",
         "nullable": true,
         "enum": [
-          "NONE",
-          "B",
-          "C",
-          "D",
-          "E"
+          "COMBUSTION",
+          "ELECTRIC",
+          "HYBRID"
         ],
         "x-enum-varnames": [
-          "NONE",
-          "B",
-          "C",
-          "D",
-          "E"
-        ]
-      },
-      "HazardousMaterials": {
-        "type": "string",
-        "example": "OTHER",
-        "enum": [
-          "HAZARDOUS_TO_WATER",
-          "EXPLOSIVE",
-          "FLAMMABLE",
-          "RADIOACTIVE",
-          "INHALATION_HAZARD",
-          "MEDICAL_WASTE",
-          "OTHER"
-        ],
-        "x-enum-varnames": [
-          "HAZARDOUS_TO_WATER",
-          "EXPLOSIVE",
-          "FLAMMABLE",
-          "RADIOACTIVE",
-          "INHALATION_HAZARD",
-          "MEDICAL_WASTE",
-          "OTHER"
-        ]
-      },
-      "ParticleReductionClass": {
-        "type": "string",
-        "example": "PMK_0",
-        "description": "The particle reduction class (Partikelminderungsklasse) according to 'Anlage XIV zu &sect; 48 StVZO' (German law).  \nRelevant for `toll`.\n",
-        "nullable": true,
-        "enum": [
-          "PMK_0",
-          "PMK_1",
-          "PMK_2",
-          "PMK_3",
-          "PMK_4"
-        ],
-        "x-enum-varnames": [
-          "PMK_0",
-          "PMK_1",
-          "PMK_2",
-          "PMK_3",
-          "PMK_4"
+          "COMBUSTION",
+          "ELECTRIC",
+          "HYBRID"
         ]
       },
       "FuelType": {
         "type": "string",
-        "description": "The fuel type of the vehicle.  \nRelevant for `emissions`.\n",
+        "description": "The fuel type of the vehicle.\nThe fuel types _CNG_GASOLINE_ and _LNG_GASOLINE_ are used for dual-fuel vehicles, therefore the **dualFuelRatio**\nhas to be specified. These fuel types cannot be used with hybrid vehicles.\n\nSupported for **engineType** _COMBUSTION_ and _HYBRID_. Relevant for `emissions`.\n",
         "example": "DIESEL",
         "nullable": true,
         "enum": [
           "GASOLINE",
           "DIESEL",
           "COMPRESSED_NATURAL_GAS",
-          "LIQUEFIED_PETROLEUM_GAS"
+          "LIQUEFIED_PETROLEUM_GAS",
+          "LIQUEFIED_NATURAL_GAS",
+          "CNG_GASOLINE",
+          "LPG_GASOLINE",
+          "ETHANOL",
+          "NONE"
         ],
         "x-enum-varnames": [
           "GASOLINE",
           "DIESEL",
           "COMPRESSED_NATURAL_GAS",
-          "LIQUEFIED_PETROLEUM_GAS"
+          "LIQUEFIED_PETROLEUM_GAS",
+          "LIQUEFIED_NATURAL_GAS",
+          "CNG_GASOLINE",
+          "LPG_GASOLINE",
+          "ETHANOL",
+          "NONE"
         ]
       },
-      "EngineType": {
+      "ElectricityType": {
         "type": "string",
-        "description": "The engine type of the vehicle.  \nRelevant for `toll`, `emissions`.\n",
-        "example": "COMBUSTION",
+        "description": "The electricity type of the vehicle.\n\nSupported for **engineType** _ELECTRIC_ or _HYBRID_. Relevant for `emissions`.\n",
+        "example": "BATTERY",
         "nullable": true,
         "enum": [
-          "COMBUSTION",
-          "ELECTRIC"
+          "BATTERY",
+          "HYDROGEN_FUEL_CELL",
+          "NONE"
         ],
         "x-enum-varnames": [
-          "COMBUSTION",
-          "ELECTRIC"
-        ]
-      },
-      "AvoidFeature": {
-        "type": "string",
-        "enum": [
-          "TOLL",
-          "FERRIES",
-          "RAIL_SHUTTLES"
-        ],
-        "x-enum-varnames": [
-          "TOLL",
-          "FERRIES",
-          "RAIL_SHUTTLES"
+          "BATTERY",
+          "HYDROGEN_FUEL_CELL",
+          "NONE"
         ]
       },
       "EmissionStandard": {
         "type": "string",
-        "description": "The emission standard of the vehicle valid in the European Union.  \nRelevant for `toll`, `emissions`.\n",
+        "description": "The emission standard of the vehicle valid in the European Union.\n\nValues different from _NONE_ supported for **engineType** _COMBUSTION_ and _HBYRID_. Relevant for `toll`, `emissions`.\n",
         "example": "EURO_5",
         "nullable": true,
         "enum": [
@@ -789,6 +973,9 @@
           "EURO_EEV",
           "EURO_6",
           "EURO_6C",
+          "EURO_6D_TEMP",
+          "EURO_6D",
+          "EURO_6E",
           "EURO_7"
         ],
         "x-enum-varnames": [
@@ -802,7 +989,265 @@
           "EURO_EEV",
           "EURO_6",
           "EURO_6C",
+          "EURO_6D_TEMP",
+          "EURO_6D",
+          "EURO_6E",
           "EURO_7"
+        ]
+      },
+      "LowEmissionZoneTypes": {
+        "type": "string",
+        "enum": [
+          "DE_GREEN",
+          "DE_YELLOW",
+          "DE_RED",
+          "DE_NONE"
+        ],
+        "x-enum-varnames": [
+          "DE_GREEN",
+          "DE_YELLOW",
+          "DE_RED",
+          "DE_NONE"
+        ]
+      },
+      "ParticleReductionClass": {
+        "type": "string",
+        "example": "PMK_0",
+        "description": "The particle reduction class (Partikelminderungsklasse) according to 'Anlage XIV zu &sect; 48 StVZO' (German law).\n\nSupported for **engineType** _COMBUSTION_ and _HYBRID_. Relevant for `toll`.\n",
+        "nullable": true,
+        "enum": [
+          "PMK_0",
+          "PMK_1",
+          "PMK_2",
+          "PMK_3",
+          "PMK_4",
+          "NONE"
+        ],
+        "x-enum-varnames": [
+          "PMK_0",
+          "PMK_1",
+          "PMK_2",
+          "PMK_3",
+          "PMK_4",
+          "NONE"
+        ]
+      },
+      "HazardousMaterials": {
+        "type": "string",
+        "example": "OTHER",
+        "enum": [
+          "HAZARDOUS_TO_WATER",
+          "EXPLOSIVE",
+          "FLAMMABLE",
+          "RADIOACTIVE",
+          "INHALATION_HAZARD",
+          "MEDICAL_WASTE",
+          "OTHER",
+          "NONE"
+        ],
+        "x-enum-varnames": [
+          "HAZARDOUS_TO_WATER",
+          "EXPLOSIVE",
+          "FLAMMABLE",
+          "RADIOACTIVE",
+          "INHALATION_HAZARD",
+          "MEDICAL_WASTE",
+          "OTHER",
+          "NONE"
+        ]
+      },
+      "TunnelRestrictionCode": {
+        "type": "string",
+        "example": "NONE",
+        "description": "The tunnel restriction code according to ADR (European Agreement Concerning the International Carriage of Dangerous Goods by Road) depending on the load of the vehicle.\n\nRelevant for `routing`.\n",
+        "nullable": true,
+        "enum": [
+          "NONE",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "x-enum-varnames": [
+          "NONE",
+          "B",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "TruckRoutesList": {
+        "nullable": true,
+        "description": "Comma-separated list of truck routes the vehicle has to follow.\nThis parameter will be ignored for non-truck profiles such as EUR_CAR, EUR_VAN, USA_1_PICKUP or AUS_LCV_LIGHT_COMMERCIAL.\n * `DE_LKWUEBERLSTVAUSNV`\n Preferred routes for long trucks in Germany, also known as Lang-LKW.\n * `NL_LZV`\n Preferred routes for long trucks in the Netherlands, also known as LZV (Langere en Zwaardere Vrachtautocombinatie).\n * `NZ_HPMV`\n The network for High Productivity Motor Vehicles (HPMV) carrying the maximum loads available under a permit (New Zeland Transport Agency).\n * `SE_BK_1`\n Public roads and bridges that support up to 64 t total permitted weight (Swedish Transport Administration).\n * `SE_BK_2`\n Public roads and bridges that support up to 51.4 t total permitted weight.\n Actual limit depends on wheelbase and axle weight (Swedish Transport Administration).\n * `SE_BK_3`\n Public roads and bridges that support up to 37.5 t total permitted weight.\n Actual limit depends on wheelbase and axle weight (Swedish Transport Administration).\n * `SE_BK_4`\n Public roads and bridges that support up to 74 t total permitted weight (draft summer 2018, Swedish Transport Administration).\n * `US_STAA`\n Routes that belong to the highway network as defined by the Surface Transportation Assistance Act in the US.\n * `US_TD`\n Part of a state-designated highway network for trucks in the US.\n * `AU_B_DOUBLE`\n B-Double routes as defined in Australia.\n * `AU_B_DOUBLE_HML`\n Routes for B-Double vehicle combinations operating at Higher Mass Limits (HML) (Australian Transport Administration).\n * `AU_B_TRIPLE`\n B-Triple routes as defined in Australia.\n * `AU_B_TRIPLE_HML`\n Routes for B-Triple vehicle combinations operating at Higher Mass Limits (HML) (Australian Transport Administration).\n * `AU_AB_TRIPLE`\n Routes for AB-Triple vehicle combinations operating (Australian Transport Administration).\n * `AU_AB_TRIPLE_HML`\n Routes for AB-Triple vehicle combinations operating at Higher Mass Limits (HML) (Australian Transport Administration).\n * `NONE`\n Overrides the profile settings to specify not to follow any truck routes. \n If _NONE_ is specified along with other truck routes it is ignored.\n\nAvailable values are provided by type `TruckRoutes`.\n\nRelevant for `routing`.\nCannot be used with **options[routingMode]=MONETARY**.\n",
+        "type": "string"
+      },
+      "TruckRoutes": {
+        "type": "string",
+        "example": "SE_BK_1",
+        "enum": [
+          "DE_LKWUEBERLSTVAUSNV",
+          "NL_LZV",
+          "NZ_HPMV",
+          "SE_BK_1",
+          "SE_BK_2",
+          "SE_BK_3",
+          "SE_BK_4",
+          "US_STAA",
+          "US_TD",
+          "AU_B_DOUBLE",
+          "AU_B_DOUBLE_HML",
+          "AU_B_TRIPLE",
+          "AU_B_TRIPLE_HML",
+          "AU_AB_TRIPLE",
+          "AU_AB_TRIPLE_HML",
+          "NONE"
+        ],
+        "x-enum-varnames": [
+          "DE_LKWUEBERLSTVAUSNV",
+          "NL_LZV",
+          "NZ_HPMV",
+          "SE_BK_1",
+          "SE_BK_2",
+          "SE_BK_3",
+          "SE_BK_4",
+          "US_STAA",
+          "US_TD",
+          "AU_B_DOUBLE",
+          "AU_B_DOUBLE_HML",
+          "AU_B_TRIPLE",
+          "AU_B_TRIPLE_HML",
+          "AU_AB_TRIPLE",
+          "AU_AB_TRIPLE_HML",
+          "NONE"
+        ]
+      },
+      "EtcSubscriptionTypes": {
+        "type": "string",
+        "example": "DE_TOLLCOLLECT",
+        "enum": [
+          "AT_GOBOX",
+          "BE_TELETOL",
+          "BE_VIAPASS",
+          "CH_LSVA",
+          "DE_QUICKBOX",
+          "DE_TOLLCOLLECT",
+          "DE_WARNOWTUNNEL_RFID",
+          "DK_BROPAS_BUSINESS",
+          "IT_TELEPASS",
+          "NL_TELECARD",
+          "NL_TTAG",
+          "NO_AUTOPASS",
+          "PT_VIA_VERDE",
+          "US_APASS",
+          "US_BREEZEBY",
+          "US_DOWNBEACH_EXPRESSPASS",
+          "US_EPASS",
+          "US_EXPRESSACCOUNT",
+          "US_EXPRESSCARD",
+          "US_EXPRESSPASS",
+          "US_EXPRESSTOLL",
+          "US_EZPASS",
+          "US_EZTAG",
+          "US_FASTRAK",
+          "US_GEAUXPASS",
+          "US_GOODTOGO",
+          "US_GOPASS",
+          "US_IPASS",
+          "US_KTAG",
+          "US_LEEWAY",
+          "US_MACKINACBRIDGE_MACPASS",
+          "US_MARYLAND_EZPASS",
+          "US_MASSACHUSETTS_EZPASS",
+          "US_NC_QUICKPASS",
+          "US_NEWHAMPSHIRE_EZPASS",
+          "US_NEWJERSEY_EZPASS",
+          "US_NEWYORK_EZPASS",
+          "US_NEXPRESS",
+          "US_OHIO_EZPASS",
+          "US_PALPASS",
+          "US_PIKEPASS",
+          "US_RIVERLINK",
+          "US_RIVERLINK_NOTRANSPONDER",
+          "US_SEAWAYTRANSITCARD",
+          "US_SUNPASS",
+          "US_TOLLTAG",
+          "US_TXTAG",
+          "US_VIRGINIA_EZPASS",
+          "US_WESTVIRGINIA_EZPASS",
+          "US_PEACHPASS",
+          "US_NEXUS",
+          "US_DELAWARE_EZPASS",
+          "US_GROSSEILETOLLBRIDGE_PASSTAG",
+          "US_EZPASS_PAYBYPLATE"
+        ],
+        "x-enum-varnames": [
+          "AT_GOBOX",
+          "BE_TELETOL",
+          "BE_VIAPASS",
+          "CH_LSVA",
+          "DE_QUICKBOX",
+          "DE_TOLLCOLLECT",
+          "DE_WARNOWTUNNEL_RFID",
+          "DK_BROPAS_BUSINESS",
+          "IT_TELEPASS",
+          "NL_TELECARD",
+          "NL_TTAG",
+          "NO_AUTOPASS",
+          "PT_VIA_VERDE",
+          "US_APASS",
+          "US_BREEZEBY",
+          "US_DOWNBEACH_EXPRESSPASS",
+          "US_EPASS",
+          "US_EXPRESSACCOUNT",
+          "US_EXPRESSCARD",
+          "US_EXPRESSPASS",
+          "US_EXPRESSTOLL",
+          "US_EZPASS",
+          "US_EZTAG",
+          "US_FASTRAK",
+          "US_GEAUXPASS",
+          "US_GOODTOGO",
+          "US_GOPASS",
+          "US_IPASS",
+          "US_KTAG",
+          "US_LEEWAY",
+          "US_MACKINACBRIDGE_MACPASS",
+          "US_MARYLAND_EZPASS",
+          "US_MASSACHUSETTS_EZPASS",
+          "US_NC_QUICKPASS",
+          "US_NEWHAMPSHIRE_EZPASS",
+          "US_NEWJERSEY_EZPASS",
+          "US_NEWYORK_EZPASS",
+          "US_NEXPRESS",
+          "US_OHIO_EZPASS",
+          "US_PALPASS",
+          "US_PIKEPASS",
+          "US_RIVERLINK",
+          "US_RIVERLINK_NOTRANSPONDER",
+          "US_SEAWAYTRANSITCARD",
+          "US_SUNPASS",
+          "US_TOLLTAG",
+          "US_TXTAG",
+          "US_VIRGINIA_EZPASS",
+          "US_WESTVIRGINIA_EZPASS",
+          "US_PEACHPASS",
+          "US_NEXUS",
+          "US_DELAWARE_EZPASS",
+          "US_GROSSEILETOLLBRIDGE_PASSTAG",
+          "US_EZPASS_PAYBYPLATE"
+        ]
+      },
+      "AvoidFeature": {
+        "type": "string",
+        "enum": [
+          "TOLL",
+          "FERRIES",
+          "RAIL_SHUTTLES"
+        ],
+        "x-enum-varnames": [
+          "TOLL",
+          "FERRIES",
+          "RAIL_SHUTTLES"
         ]
       },
       "Profile": {
@@ -870,9 +1315,14 @@
           "UTC_OFFSET_CHANGE_EVENTS",
           "COMBINED_TRANSPORT_EVENTS",
           "TRAFFIC_EVENTS",
+          "TRAFFIC_EVENTS_POLYLINE",
           "SCHEDULE_EVENTS",
           "EMISSIONS_EN16258_2012",
           "EMISSIONS_EN16258_2012_HBEFA",
+          "EMISSIONS_ISO14083_2022",
+          "EMISSIONS_ISO14083_2022_DEFAULT_CONSUMPTION",
+          "EMISSIONS_ISO14083_2023",
+          "EMISSIONS_ISO14083_2023_DEFAULT_CONSUMPTION",
           "EMISSIONS_FRENCH_CO2E_DECREE_2017_639",
           "ALTERNATIVE_ROUTES",
           "SCHEDULE_REPORT",
@@ -896,29 +1346,19 @@
           "UTC_OFFSET_CHANGE_EVENTS",
           "COMBINED_TRANSPORT_EVENTS",
           "TRAFFIC_EVENTS",
+          "TRAFFIC_EVENTS_POLYLINE",
           "SCHEDULE_EVENTS",
           "EMISSIONS_EN16258_2012",
           "EMISSIONS_EN16258_2012_HBEFA",
+          "EMISSIONS_ISO14083_2022",
+          "EMISSIONS_ISO14083_2022_DEFAULT_CONSUMPTION",
+          "EMISSIONS_ISO14083_2023",
+          "EMISSIONS_ISO14083_2023_DEFAULT_CONSUMPTION",
           "EMISSIONS_FRENCH_CO2E_DECREE_2017_639",
           "ALTERNATIVE_ROUTES",
           "SCHEDULE_REPORT",
           "GUIDED_NAVIGATION",
           "MONETARY_COSTS"
-        ]
-      },
-      "LowEmissionZoneTypes": {
-        "type": "string",
-        "enum": [
-          "DE_GREEN",
-          "DE_YELLOW",
-          "DE_RED",
-          "DE_NONE"
-        ],
-        "x-enum-varnames": [
-          "DE_GREEN",
-          "DE_YELLOW",
-          "DE_RED",
-          "DE_NONE"
         ]
       },
       "ErrorResponse": {
@@ -971,7 +1411,7 @@
             "type": "string"
           },
           "errorCode": {
-            "description": "A constant string that can be used to identify this error class programmatically.\nAn errorCode can have **details** to provide information in additional properties which are described with the code they apply to. They are of type string unless otherwise specified.\nNote that additional errorCodes as well as the **details** of existing errorCodes may be added at any time. Furthermore, the **description** may change at any time.  \n\n**Error codes for** `GENERAL_VALIDATION_ERROR`\n\n* `GENERAL_INVALID_VALUE` - A parameter is set to an invalid value.\n  * `value` - The invalid value.\n* `GENERAL_UNRECOGNIZED_PARAMETER` - A parameter is unknown.\n* `GENERAL_MISSING_PARAMETER` - A required parameter is missing.\n* `GENERAL_MINIMUM_LENGTH_VIOLATED` - The minimum length is violated.\n  * `minimumLength` - The minimum length (integer).\n* `GENERAL_MAXIMUM_LENGTH_VIOLATED` - The maximum length is violated.\n  * `maximumLength` - The maximum length (integer).\n* `GENERAL_MINIMUM_VALUE_VIOLATED` - The minimum value restriction is violated.\n  * `minimumValue` - The minimum value (integer or double).\n* `GENERAL_MAXIMUM_VALUE_VIOLATED` - The maximum value restriction is violated.\n  * `maximumValue` - The maximum value (integer or double).\n* `GENERAL_DUPLICATE_PARAMETER` - A parameter is duplicated.\n* `GENERAL_INVALID_LIST` - A list has an invalid format such as duplicate commas.\n  * `value` - The invalid list.\n* `GENERAL_INVALID_INTERVAL` - A time interval is invalid, i.e. start is greater than end.\n* `ROUTING_INVALID_WAYPOINT_ATTRIBUTE` - A waypoint attribute is set to an invalid value.\n  * `attribute` - The invalid waypoint attribute.\n* `ROUTING_UNRECOGNIZED_WAYPOINT_ATTRIBUTE` - A waypoint attribute is unknown.\n  * `attribute` - The invalid waypoint key.\n* `ROUTING_DUPLICATE_WAYPOINT_ATTRIBUTE` - A waypoint attribute is duplicated.\n  * `attribute` - The duplicated waypoint key.\n* `ROUTING_WAYPOINT_ATTRIBUTE_CONFLICT` - Two waypoint attributes are in conflict with each other.\n  * `attribute` - The first conflicting attribute.\n  * `conflictingAttribute` - The second conflicting attribute.\n* `ROUTING_INVALID_MANIPULATION_WAYPOINT_ORDER` - The manipulation waypoint is not valid for start or destination.\n* `ROUTING_INVALID_COMBINED_TRANSPORT_WAYPOINT_ORDER` - The combinedTransport waypoint is not valid for start or destination.\n* `ROUTING_INVALID_WAYPOINT_LIST_FOR_ALTERNATIVE_ROUTES` - Alternative routes are supported only for two on-road or off-road waypoints.\n* `ROUTING_INVALID_WAYPOINT` - A waypoint contains multiple types or none of them, but exactly one must be specified.\n* `ROUTING_MUST_HAVE_WAYPOINTS_OR_ROUTE_ID` - The request must have either at least two waypoints or a routeId.\n* `ROUTING_EMISSIONS_MUTUALLY_EXCLUSIVE` - EMISSIONS_EN16258_2012 and EMISSIONS_EN16258_2012_HBEFA are mutually exclusive.\n* `ROUTING_START_AND_ARRIVAL_TIME_MUTUALLY_EXCLUSIVE` - startTime and arrivalTime are mutually exclusive. - _The **parameter** remains empty._\n* `ROUTING_ESTIMATED_DISTANCE_TOO_LONG` - The distance of the route (estimated by air-line) for non-motorized vehicles is too long. - _The **parameter** remains empty._\n  * `distance` - The estimated distance (integer).\n  * `limit` - The maximum allowable distance (integer).\n* `ROUTING_PARAMETER_CONFLICT` - Two parameters are in conflict with each other.\n  * `conflictingParameter` - The conflicting parameter.\n  * `message` - The error message.\n* `ROUTING_NO_VALID_COUNTRY_ALLOWED` - The list of allowed countries does not contain any of the available countries so that the effective list of countries allowed for routing is empty.\n  * `allowedCountries` - The list of allowed countries.\n* `ROUTING_ALL_VALID_COUNTRIES_PROHIBITED` - The list of prohibited countries contains all available countries so that the effective list of countries allowed for routing is empty.\n  * `prohibitedCountries` - The list of prohibited countries.\n* `ROUTING_ALLOWED_AND_PROHIBITED_COUNTRIES_CONFLICT` - The lists of allowed and prohibited countries contain the same countries so that the effective list of countries allowed for routing is empty. - _The **parameter** remains empty._\n  * `allowedCountries` - The list of allowed countries.\n  * `prohibitedCountries` - The list of prohibited countries.\n* `ROUTING_MAXIMUM_HORIZON_VALUE_VIOLATED` - The maximum value of horizon is violated.\n  * `limit` - The maximum allowable horizon (integer).\n* `ROUTING_MUST_HAVE_ONE_WAYPOINT_OR_ROUTE_ID` - The request must have either a waypoint or a routeId.\n* `ROUTING_HORIZONS_EQUAL_OR_NOT_ASCENDING` - The horizons have equal values or are not ascending.\n  * `value` - The invalid horizon.\n* `ROUTING_ROUTE_TOO_LONG_FOR_REACHABILITY` - The route is too long to be used with reachable areas or locations.\n  * `length` - The actual route length (integer).\n  * `limit` - The maximum allowable route length (integer).\n* `ROUTING_ALLOWED_AND_PROHIBITED_COUNTRIES_IN_CONFLICT_WITH_ROUTE_ID` - The lists of allowed and prohibited countries are in conflict with the routeId which passes an effectively prohibited country.\n  * `value` - The value in conflict.\n* `ROUTING_ROUTE_ID_NOT_FOUND` - The routeId cannot be found.\n  * `value` - The routeId.\n* `ROUTING_ROUTE_ID_CANNOT_BE_USED` - The routeId cannot be used for this operation as it was created by a service other than routing and lacks a routing context.\n  * `value` - The routeId.\n* `ROUTING_PROFILE_NOT_FOUND` - The requested profile could not be found.\n  * `value` - The profile name.\n* `ROUTING_UNSUPPORTED_CURRENCY` - The specified currency is not supported.\n  * `currency` - The unsupported currency.\n* `ROUTING_PARAMETER_ONLY_SUPPORTED_BY_POST` - A requested parameter is only supported for the appropriate POST operation.\n  * `value` - The invalid parameter value.\n* `ROUTING_OPENING_INTERVALS_REQUIRE_TIME` - When using opening intervals with a waypoint and with **options[trafficMode]=AVERAGE** either a start or an arrival time has to be specified.\n* `ROUTING_ARRIVAL_TIME_WITH_SCHEDULE` - **options[arrivalTime]** cannot be used with the **results** _SCHEDULE_REPORT_ and _SCHEDULE_EVENT_ nor when **openingIntervals**, **serviceTime** or **workingHoursPreset** are specified.\n  * `value` - The invalid parameter value.\n* `ROUTING_INVALID_NUMBER_OF_COORDINATES` - The polyline cannot be parsed because the number of coordinates is not even.\n  * `value` - The invalid parameter value.\n  * `polylineIndex` - The index denoting the polyline in which the error was found.\n* `ROUTING_INVALID_COORDINATE` - The provided coordinate is not in the valid range or cannot be parsed.\n  * `value` - The invalid parameter value.\n  * `polylineIndex` - The index denoting the polyline in which the error was found.\n  * `coordinateIndex` - The index denoting the erroneous coordinate within the polyline.\n* `ROUTING_FEATURE_NOT_SUPPORTED_WITH_MONETARY_COSTS` - The requested feature is not supported when **options[routingMode] is _MONETARY_**.\n  * `value` - The invalid parameter value.\n* `ROUTING_MUST_HAVE_MONETARY_COST_VALUE` - Both values monetaryCostOptions[costPerKilometer] and monetaryCostOptions[workingCostPerHour] are zero. Use a value greater zero for at least one of this monetaryCostOptions parameters.\n\n**Error codes for** `ROUTING_ERROR`\n\n* `ROUTING_WAYPOINT_CANNOT_BE_MATCHED` - The waypoint cannot be matched to the nearest possible road.\n* `ROUTING_ROUTE_NOT_FOUND` - A route between at least two waypoints could not be found for the current configuration and profile. - _The **parameter** remains empty._\n* `ROUTING_UTC_OFFSET_CANNOT_BE_DETERMINED` - The UTC offset of the start waypoint cannot be determined.\n* `ROUTING_BLOCK_INTERSECTING_ROADS_TOO_MANY_SEGMENTS` - The maximum number of road segments intersecting one polyline must not exceed 5000.\n\n**Error codes for** `ROUTING_RESTRICTION_EXCEEDED`\n\n* `ROUTING_TOO_MANY_WAYPOINTS` - The request contains too many waypoints.\n  * `limit`- The maximum allowed number of waypoints for a single request (integer).\n\n**Error codes for** `GENERAL_RESOURCE_NOT_FOUND`\n\n* `GENERAL_INVALID_ID` - The ID does not exist.\n  * `value` - The invalid ID.",
+            "description": "A constant string that can be used to identify this error class programmatically.\nAn errorCode can have **details** to provide information in additional properties which are described with the code they apply to. They are of type string unless otherwise specified.\nNote that additional errorCodes as well as the **details** of existing errorCodes may be added at any time. Furthermore, the **description** may change at any time.  \n\n**Error codes for** `GENERAL_VALIDATION_ERROR`\n\n* `GENERAL_INVALID_VALUE` - A parameter is set to an invalid value.\n  * `value` - The invalid value.\n* `GENERAL_UNRECOGNIZED_PARAMETER` - A parameter is unknown.\n* `GENERAL_MISSING_PARAMETER` - A required parameter is missing.\n* `GENERAL_MINIMUM_LENGTH_VIOLATED` - The minimum length is violated.\n  * `minimumLength` - The minimum length (integer).\n* `GENERAL_MAXIMUM_LENGTH_VIOLATED` - The maximum length is violated.\n  * `maximumLength` - The maximum length (integer).\n* `GENERAL_MINIMUM_VALUE_VIOLATED` - The minimum value restriction is violated.\n  * `minimumValue` - The minimum value (integer or double).\n* `GENERAL_MAXIMUM_VALUE_VIOLATED` - The maximum value restriction is violated.\n  * `maximumValue` - The maximum value (integer or double).\n* `GENERAL_DUPLICATE_PARAMETER` - A parameter is duplicated.\n* `GENERAL_INVALID_LIST` - A list has an invalid format such as duplicate commas.\n  * `value` - The invalid list.\n* `GENERAL_INVALID_INTERVAL` - A time interval is invalid, i.e. start is greater than end.\n* `ROUTING_INVALID_WAYPOINT_ATTRIBUTE` - A waypoint attribute is set to an invalid value.\n  * `attribute` - The invalid waypoint attribute.\n* `ROUTING_UNRECOGNIZED_WAYPOINT_ATTRIBUTE` - A waypoint attribute is unknown.\n  * `attribute` - The invalid waypoint key.\n* `ROUTING_DUPLICATE_WAYPOINT_ATTRIBUTE` - A waypoint attribute is duplicated.\n  * `attribute` - The duplicated waypoint key.\n* `ROUTING_WAYPOINT_ATTRIBUTE_CONFLICT` - Two waypoint attributes are in conflict with each other.\n  * `attribute` - The first conflicting attribute.\n  * `conflictingAttribute` - The second conflicting attribute.\n* `ROUTING_INVALID_MANIPULATION_WAYPOINT_ORDER` - The manipulation waypoint is not valid for start or destination.\n* `ROUTING_INVALID_COMBINED_TRANSPORT_WAYPOINT_ORDER` - The combinedTransport waypoint is not valid for start or destination.\n* `ROUTING_INVALID_WAYPOINT_LIST_FOR_ALTERNATIVE_ROUTES` - Alternative routes are supported only for two on-road or off-road waypoints.\n* `ROUTING_INVALID_WAYPOINT` - A waypoint contains multiple types or none of them, but exactly one must be specified.\n* `ROUTING_MUST_HAVE_WAYPOINTS_OR_ROUTE_ID` - The request must have either at least two **waypoints** or a **routeId**.\n* `ROUTING_EMISSIONS_MUTUALLY_EXCLUSIVE` - All emissions _EN16258_2012_ results and _ISO14083_2022_ or _ISO14083_2023_ results are mutually exclusive.\n  * `attribute` - The first conflicting emissions standard.\n  * `conflictingAttributes` - The list of other conflicting emissions standards.\n* `ROUTING_START_AND_ARRIVAL_TIME_MUTUALLY_EXCLUSIVE` - **options[startTime]** and **options[arrivalTime]** are mutually exclusive. - _The **parameter** remains empty._\n* `ROUTING_ESTIMATED_DISTANCE_TOO_LONG` - The distance of the route (estimated by air-line) for non-motorized vehicles is too long. - _The **parameter** remains empty._\n  * `distance` - The estimated distance (integer).\n  * `limit` - The maximum allowable distance (integer).\n* `ROUTING_PARAMETER_CONFLICT` - Two parameters are in conflict with each other.\n  * `conflictingParameter` - The conflicting parameter.\n  * `message` - The error message.\n* `ROUTING_NO_VALID_COUNTRY_ALLOWED` - The list of allowed countries does not contain any of the available countries so that the effective list of countries allowed for routing is empty.\n  * `allowedCountries` - The list of allowed countries.\n* `ROUTING_ALL_VALID_COUNTRIES_PROHIBITED` - The list of prohibited countries contains all available countries so that the effective list of countries allowed for routing is empty.\n  * `prohibitedCountries` - The list of prohibited countries.\n* `ROUTING_ALLOWED_AND_PROHIBITED_COUNTRIES_CONFLICT` - The lists of allowed and prohibited countries contain the same countries so that the effective list of countries allowed for routing is empty. - _The **parameter** remains empty._\n  * `allowedCountries` - The list of allowed countries.\n  * `prohibitedCountries` - The list of prohibited countries.\n* `ROUTING_MAXIMUM_HORIZON_VALUE_VIOLATED` - The maximum value of horizon is violated.\n  * `limit` - The maximum allowable horizon (integer).\n* `ROUTING_MUST_HAVE_ONE_WAYPOINT_OR_ROUTE_ID` - The request must have either a **waypoint** or a **routeId**.\n* `ROUTING_HORIZONS_EQUAL_OR_NOT_ASCENDING` - The horizons have equal values or are not ascending.\n  * `value` - The invalid horizon.\n* `ROUTING_ROUTE_TOO_LONG_FOR_REACHABILITY` - The route is too long to be used with reachable areas or locations.\n  * `length` - The actual route length (integer).\n  * `limit` - The maximum allowable route length (integer).\n* `ROUTING_ALLOWED_AND_PROHIBITED_COUNTRIES_IN_CONFLICT_WITH_ROUTE_ID` - The lists of allowed and prohibited countries are in conflict with the **routeId** which passes an effectively prohibited country.\n  * `value` - The value in conflict.\n* `ROUTING_ROUTE_ID_NOT_FOUND` - The **routeId** cannot be found.\n  * `value` - The routeId.\n* `ROUTING_ROUTE_ID_CANNOT_BE_USED` - The **routeId** cannot be used for this operation as it was created by a service other than routing and lacks a routing context.\n  * `value` - The routeId.\n* `ROUTING_PROFILE_NOT_FOUND` - The requested **profile** could not be found.\n  * `value` - The profile name.\n* `ROUTING_UNSUPPORTED_CURRENCY` - The specified currency is not supported.\n  * `currency` - The unsupported currency.\n* `ROUTING_PARAMETER_ONLY_SUPPORTED_BY_POST` - A requested parameter is only supported for the appropriate POST operation.\n  * `value` - The invalid parameter value.\n* `ROUTING_OPENING_INTERVALS_REQUIRE_TIME` - When using opening intervals with a waypoint and with **options[trafficMode]** _AVERAGE_ either a start or an arrival time has to be specified.\n* `ROUTING_ARRIVAL_TIME_WITH_SCHEDULE` - **options[arrivalTime]** cannot be used with the **results** _SCHEDULE_REPORT_ and _SCHEDULE_EVENT_ nor when **openingIntervals**, **serviceTime** or **workingHoursPreset** are specified.\n  * `value` - The invalid parameter value.\n* `ROUTING_INVALID_NUMBER_OF_COORDINATES` - The polyline cannot be parsed because the number of coordinates is not even or less than 4.\n  * `value` - The invalid parameter value.\n  * `polylineIndex` - The index denoting the polyline in which the error was found (integer).\n* `ROUTING_INVALID_COORDINATE` - The provided coordinate is not in the valid range or cannot be parsed.\n  * `value` - The invalid parameter value.\n  * `polylineIndex` - The index denoting the polyline in which the error was found (integer).\n  * `coordinateIndex` - The index denoting the erroneous coordinate within the polyline (integer).\n* `ROUTING_FEATURE_NOT_SUPPORTED_WITH_MONETARY_COSTS` - The requested feature is not supported when **options[routingMode]** is _MONETARY_.\n  * `value` - The invalid parameter value.\n* `ROUTING_MUST_HAVE_MONETARY_COST_VALUE` - Both values **monetaryCostOptions[costPerKilometer]** and **monetaryCostOptions[workingCostPerHour]** are zero. Use a value greater zero for at least one of this **monetaryCostOptions** parameters.\n* `ROUTING_CUSTOM_ROAD_ATTRIBUTE_SCENARIO_NOT_FOUND` - At least one of the requested **options[customRoadAttributeScenarios]** could not be found.\n  * `scenarios` - The scenarios which could not be found (comma-separated list).\n* `ROUTING_POSITION_AND_WAYPOINT_MUTUALLY_EXCLUSIVE` - **position** and **waypoint** are mutually exclusive. - _The **parameter** remains empty._\n* `ROUTING_VEHICLE_POSITION_MISSING` - The position of the vehicle must be specified by either **position** or **waypoint**. - _The **parameter** remains empty._\n* `ROUTING_UNSUPPORTED_WAYPOINT_TYPE_FOR_ETA_CALCULATION` - The ETA calculation does not support route-manipulation waypoints, combined-transport waypoints or vehicle parameters at waypoints.\n  * `waypointIndex` - The index of the waypoint (integer).\n* `ROUTING_MISSING_WAYPOINT_NAME` - The requested route for the **routeId** contains a waypoint which does not have a name.\n  * `waypointIndex` - The index of the waypoint (integer).\n* `ROUTING_DUPLICATE_WAYPOINT_NAME` - The requested route for the **routeId** contains waypoints with a duplicate name.\n  * `waypointIndexes` - The indexes of the waypoints with the duplicated name (comma-separated list).\n  * `name` - The duplicate waypoint name.\n* `ROUTING_WAYPOINT_NAME_NOT_FOUND` - The waypoint name could not be found in the requested route for the **routeId**.\n  * `name` - The invalid waypoint name.\n* `ROUTING_VEHICLE_POSITION_BEFORE_FIRST_WAYPOINT` - The position of the vehicle cannot be before the first waypoint.\n* `ROUTING_ROUTE_ID_REQUIRES_WORKLOGBOOK` - The route associated with the given **routeId** has been calculated with a **driver** and requires the **workLogbook** to be specified in the ETA request.\n* `ROUTING_ROUTE_ID_DOES_NOT_SUPPORT_WORKLOGBOOK` - The route associated with the given **routeId** has been calculated without a **driver** and does not support the **workLogbook** specified in the ETA request.\n\n**Error codes for** `ROUTING_ERROR`\n\n* `ROUTING_WAYPOINT_CANNOT_BE_MATCHED` - The waypoint cannot be matched to the nearest possible road.\n* `ROUTING_ROUTE_NOT_FOUND` - A route between at least two waypoints could not be found for the current configuration and profile. - _The **parameter** remains empty._\n* `ROUTING_TIMEOUT` - The route calculation has timed out.\n* `ROUTING_UTC_OFFSET_CANNOT_BE_DETERMINED` - The UTC offset of the start waypoint cannot be determined.\n* `ROUTING_BLOCK_INTERSECTING_ROADS_TOO_MANY_SEGMENTS` - The maximum number of road segments intersecting one polyline must not exceed 5000.\n\n**Error codes for** `ROUTING_RESTRICTION_EXCEEDED`\n\n* `ROUTING_TOO_MANY_WAYPOINTS` - The request contains too many waypoints.\n  * `limit`- The maximum allowed number of waypoints for a single request (integer).\n\n**Error codes for** `GENERAL_RESOURCE_NOT_FOUND`\n\n* `GENERAL_INVALID_ID` - The ID does not exist.\n  * `value` - The invalid ID.",
             "type": "string"
           },
           "parameter": {
@@ -997,7 +1437,7 @@
             "type": "string"
           },
           "warningCode": {
-            "description": "A constant string that can be used to identify this warning class programmatically.\nA warningCode can have **details** to provide information in additional properties which are described with the code they apply to. They are of type string unless otherwise specified.\nNote that additional warningCodes as well as the **details** of existing warningCodes may be added at any time. Furthermore, the **description** may change at any time.  \n\n* `GENERAL_PARAMETER_IGNORED` - A parameter was ignored.\n  * `parameter` - The ignored parameter.\n  * `value` - The value of the ignored parameter.\n  * `relatedParameter` - The parameter which caused the parameter in question to be ignored.\n  * `relatedValue` - The value which caused the parameter in question to be ignored. Not present if the conflict is independent of the value.\n* `ROUTING_DRIVERS_WORKING_HOURS_WITH_BOAT_OR_RAIL` - The route contains a boat (ferry) or rail (train or rail shuttle) connection which can lead to incorrect results when **workingHoursPreset** is specified. Breaks may not be scheduled in an optimal way.\n* `ROUTING_MANEUVERS_IN_DIFFERENT_LANGUAGE` - The requested language is not available for maneuvers, a different language is used instead.\n  * `requestedLanguage` - The language requested by the user.\n  * `usedLanguage` - The language of maneuvers in the response.\n* `ROUTING_UNSUPPORTED_EMISSION_PARAMETER` - Emission calculation based on EMISSIONS_EN16258_2012_HBEFA does not support the emission standard or the fuel type of the vehicle.\n* `ROUTING_DATE_UNSUPPORTED_PERIOD` - The date is more than 1 month in the past or more than 6 months in the future which can lead to incorrect results when calculating toll or using **options[trafficMode]=REALISTIC**.\n  * `parameter` - The date parameter.\n  * `value` - The date value.\n* `ROUTING_COUNTRY_IGNORED` - The country code given in **options[allowedCountries]** or **options[prohibitedCountries]** was ignored as it is not covered by the map.\n  * `ignoredCountryCode` - The ignored country code.\n* `ROUTING_SUBDIVISION_FALLBACK` - The country code given in **options[allowedCountries]** contains a country subdivision code that is not supported by the map, and that instead the enclosing country code was used. In such cases, routes are constrained to the country, rather than only the subdivision.\n  * `requestedSubdivisionCode` - The country subdivision code that was requested, but cannot be used.\n  * `fallbackCountryCode` - The enclosing country that is used as a fallback instead.\n* `ROUTING_LIVE_TRAFFIC_DATA_UNAVAILABLE` - Live traffic data are temporarily unavailable.\n* `ROUTING_ETC_SUBSCRIPTION_REQUIRED` - The route passes through toll areas but the configured vehicle does not contain the required electronic toll collection subscriptions.\n  * `requiredEtcSubscriptions` - The required electronic toll collection subscriptions.\n* `ROUTING_WAYPOINT_MATCH_DISTANCE` - The distance from the waypoint to the nearest accessible road is greater than 1000 meters. Closed areas, countries or roads can be the reason for this.\n  * `distance`- The air-line distance between waypoint and match point on the road.\n  * `parameter` - The waypoint parameter.\n* `ROUTING_COMBINED_TRANSPORT_WAYPOINT_IGNORED` - The combined-transport waypoint was ignored as no connection could be found.\n  * `parameter` - The waypoint parameter.\n  * `availableConnections` - The list of connections available for the start coordinates. This will only be returned if connections for the start coordinates are found, but none match the destination coordinates.\n* `ROUTING_COMBINED_TRANSPORT_WAYPOINT_AMBIGUOUS` - The combined-transport waypoint was ambiguous.\n  * `parameter` - The waypoint parameter.\n  * `usedConnection` - The connection used for this route.\n  * `availableConections` - The list of connections available for the combined-transport waypoint.\n",
+            "description": "A constant string that can be used to identify this warning class programmatically.\nA warningCode can have **details** to provide information in additional properties which are described with the code they apply to. They are of type string unless otherwise specified.\nNote that additional warningCodes as well as the **details** of existing warningCodes may be added at any time. Furthermore, the **description** may change at any time.  \n\n* `GENERAL_PARAMETER_IGNORED` - A parameter was ignored.\n  * `parameter` - The ignored parameter.\n  * `value` - The value of the ignored parameter.\n  * `relatedParameter` - The parameter which caused the parameter in question to be ignored.\n  * `relatedValue` - The value which caused the parameter in question to be ignored. Not present if the conflict is independent of the value.\n* `ROUTING_PARAMETER_INCONSISTENCY` - A parameter was inconsistent with other vehicle parameters. Some results like emissions or toll may not be correct.\n  * `parameter` - The inconsistent parameter.\n  * `value` - The value of the inconsistent parameter.\n  * `relatedParameter` - The parameter which caused the parameter in question to be inconsistent.\n  * `relatedValue` - The value which caused the parameter in question to be inconsistent.\n* `ROUTING_MISSING_VEHICLE_PARAMETER` - The requested vehicle contains a parameter which requires another parameter to be specified. Some results like emissions or toll may not be correct.\n  * `missingParameter` - The missing parameter.\n  * `relatedParameter` - The parameter which requires the missing parameter to be specified.\n  * `relatedValue` - The value which requires the missing parameter to be specified.\n* `ROUTING_DRIVERS_WORKING_HOURS_WITH_BOAT_OR_RAIL` - The route contains a boat (ferry) or rail (train or rail shuttle) connection which can lead to incorrect results when **workingHoursPreset** is specified. Breaks may not be scheduled in an optimal way.\n* `ROUTING_MANEUVERS_IN_DIFFERENT_LANGUAGE` - The requested language is not available for maneuvers, a different language is used instead.\n  * `requestedLanguage` - The language requested by the user.\n  * `usedLanguage` - The language of maneuvers in the response.\n* `ROUTING_UNSUPPORTED_EMISSION_PARAMETER` - The requested emission standard does not support the specified vehicle.\n  * `relatedParameter` - The parameter causing the emission calculation failure.\n  * `relatedValue` - The value of the related parameter.\n* `ROUTING_REGION_NOT_SUPPORTED_BY_EMISSION_STANDARD` - The requested emission standard does not support the region the profile was designed for.\n  * `region` - The requested region not supported by the requested emission standard.\n  * `supportedRegions` - The regions which are supported by the requested emission standard.\n  * `emissionStandard` - The requested emission standard.\n* `ROUTING_COUNTRY_IGNORED` - The country code given in **options[allowedCountries]** or **options[prohibitedCountries]** was ignored as it is not covered by the map.\n  * `ignoredCountryCode` - The ignored country code.\n* `ROUTING_SUBDIVISION_FALLBACK` - The country code given in **options[allowedCountries]** contains a country subdivision code that is not supported by the map, and that instead the enclosing country code was used. In such cases, routes are constrained to the country, rather than only the subdivision.\n  * `requestedSubdivisionCode` - The country subdivision code that was requested, but cannot be used.\n  * `fallbackCountryCode` - The enclosing country that is used as a fallback instead.\n* `ROUTING_LIVE_TRAFFIC_DATA_UNAVAILABLE` - Live traffic data are temporarily unavailable.\n* `ROUTING_ETC_SUBSCRIPTION_REQUIRED` - The route passes through toll areas but the configured vehicle does not contain the required electronic toll collection subscriptions.\n  * `requiredEtcSubscriptions` - The required electronic toll collection subscriptions.\n* `ROUTING_WAYPOINT_MATCH_DISTANCE` - The distance from the waypoint to the nearest accessible road is greater than 1000 meters. Closed areas, countries or roads can be the reason for this.\n  * `distance`- The air-line distance between waypoint and match point on the road.\n  * `parameter` - The waypoint parameter.\n* `ROUTING_COMBINED_TRANSPORT_WAYPOINT_IGNORED` - The combined-transport waypoint was ignored as no connection could be found.\n  * `parameter` - The waypoint parameter.\n  * `availableConnections` - The list of connections available for the start coordinates (array of strings). This will only be returned if connections for the start coordinates are found, but none match the destination coordinates.\n* `ROUTING_COMBINED_TRANSPORT_WAYPOINT_AMBIGUOUS` - The combined-transport waypoint was ambiguous.\n  * `parameter` - The waypoint parameter.\n  * `usedConnection` - The connection used for this route.\n  * `availableConnections` - The list of connections available for the combined-transport waypoint (array of strings).\n* `ROUTING_WAYPOINTS_DONT_MATCH_PROFILE_REGION` - The waypoints or the routeId do not match the region of the profile specified in the request.\n  * `waypointsRegion` - The region of the waypoints or routeId.\n  * `profileRegion` - The region of the profile.\n* `ROUTING_INACTIVE_ROADATTRIBUTE_SCENARIOS` - The scenarios given in options[customRoadAttributeScenarios] contain at least one which is not active.\n  * `scenarios` - The inactive scenarioIds (comma-separated list).\n* `ROUTING_ROADATTRIBUTES_MAYBE_IGNORED` - At least one of the scenarios given in options[customRoadAttributeScenarios] could not be fully considered in the route calculation after a map update, i.e. some road attributes may have been ignored.\n",
             "type": "string"
           },
           "details": {
@@ -1014,6 +1454,12 @@
           "en16258_2012": {
             "$ref": "#/components/schemas/Emissions_EN16258_2012"
           },
+          "iso14083_2022": {
+            "$ref": "#/components/schemas/Emissions_ISO14083_2022"
+          },
+          "iso14083_2023": {
+            "$ref": "#/components/schemas/Emissions_ISO14083_2023"
+          },
           "frenchCO2eDecree2017_639": {
             "$ref": "#/components/schemas/Emissions_French_CO2e_Decree_2017_639"
           }
@@ -1021,7 +1467,7 @@
       },
       "Emissions_EN16258_2012": {
         "type": "object",
-        "description": "Emissions according to EN16258 from 2012 (a.k.a. CEN).",
+        "description": "Emissions according to EN16258 from 2012 (a.k.a. CEN standard).",
         "required": [
           "fuelConsumption",
           "co2eTankToWheel",
@@ -1034,6 +1480,106 @@
             "minimum": 0,
             "type": "number",
             "description": "The total fuel consumption [kg].",
+            "format": "double"
+          },
+          "co2eTankToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The amount of emitted CO2e from tank to wheel [kg].",
+            "format": "double"
+          },
+          "co2eWellToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The amount of emitted CO2e from well to wheel [kg].",
+            "format": "double"
+          },
+          "energyUseTankToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The tank-to-wheel energy use [MJ].",
+            "format": "double"
+          },
+          "energyUseWellToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The well-to-wheel energy use [MJ].",
+            "format": "double"
+          }
+        }
+      },
+      "Emissions_ISO14083_2022": {
+        "type": "object",
+        "description": "Emissions according to the draft version of ISO 14083:2023.",
+        "required": [
+          "fuelConsumption",
+          "electricityConsumption",
+          "co2eTankToWheel",
+          "co2eWellToWheel",
+          "energyUseTankToWheel",
+          "energyUseWellToWheel"
+        ],
+        "properties": {
+          "fuelConsumption": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The total conventional fuel consumption [kg].",
+            "format": "double"
+          },
+          "electricityConsumption": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The total electric power consumption of the vehicle if the **engineType** is _ELECTRIC_ or _HYBRID_ [kWh].",
+            "format": "double"
+          },
+          "co2eTankToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The amount of emitted CO2e from tank to wheel [kg].",
+            "format": "double"
+          },
+          "co2eWellToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The amount of emitted CO2e from well to wheel [kg].",
+            "format": "double"
+          },
+          "energyUseTankToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The tank-to-wheel energy use [MJ].",
+            "format": "double"
+          },
+          "energyUseWellToWheel": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The well-to-wheel energy use [MJ].",
+            "format": "double"
+          }
+        }
+      },
+      "Emissions_ISO14083_2023": {
+        "type": "object",
+        "description": "Emissions according to ISO 14083:2023 (a.k.a. ISO standard).",
+        "required": [
+          "fuelConsumption",
+          "electricityConsumption",
+          "co2eTankToWheel",
+          "co2eWellToWheel",
+          "energyUseTankToWheel",
+          "energyUseWellToWheel"
+        ],
+        "properties": {
+          "fuelConsumption": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The total conventional fuel consumption [kg].",
+            "format": "double"
+          },
+          "electricityConsumption": {
+            "minimum": 0,
+            "type": "number",
+            "description": "The total electric power consumption of the vehicle if the **engineType** is _ELECTRIC_ or _HYBRID_ [kWh].",
             "format": "double"
           },
           "co2eTankToWheel": {
@@ -1109,7 +1655,7 @@
           "trafficDelay": {
             "minimum": 0,
             "type": "integer",
-            "description": "The total delay due to live traffic on this leg [s].\n\nThis value contains the sum of all traffic events on this leg and will be non-zero only if **options[trafficMode]=REALISTIC**.\nSee [here](./Concepts/Traffic%20Modes.htm) for more information.",
+            "description": "The total delay due to live traffic on this leg [s].\n\nThis value contains the sum of all traffic events on this leg and will be non-zero only if **options[trafficMode]=REALISTIC**.\nSee [here](./concepts/traffic-modes) for more information.",
             "format": "int32",
             "example": 0
           },
@@ -1393,13 +1939,13 @@
         "properties": {
           "startTime": {
             "nullable": true,
-            "description": "Defines the start time of the route formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).\nThis field is mutually exclusive with **arrivalTime**.\nIf none of them is specified the current time will be used as the start time for **trafficMode** _REALISTIC_.\nIf the date-time string does not include an explicit offset to UTC, the time will be interpreted as the local time of the start waypoint.\nResponses will contain the offset to UTC specified in the request or that of the start waypoint.\nThe date must not be before 1970-01-01T00:00:00+00:00 nor after 2037-12-31T23:59:59+00:00. \nFor best results it should not be more than one month in the past nor more than six months in the future.  \nSee [here](./Concepts/Date%20and%20Time.htm) for more information on the relevance of date and time.",
+            "description": "Defines the start time of the route formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).\nThis field is mutually exclusive with **arrivalTime**.\nIf none of them is specified the current time will be used as the start time for **trafficMode** _REALISTIC_.\nIf the date-time string does not include an explicit offset to UTC, the time will be interpreted as the local time of the start waypoint.\nResponses will contain the offset to UTC specified in the request or that of the start waypoint.\nThe date must not be before 1970-01-01T00:00:00+00:00 nor after 2037-12-31T23:59:59+00:00. \nFor best results it should not be more than one month in the past nor more than six months in the future.  \nSee [here](./concepts/date-and-time) for more information on the relevance of date and time.",
             "type": "string",
             "format": "date-time",
             "example": "2020-12-04T06:00:00+00:00"
           },
           "arrivalTime": {
-            "description": "Defines the arrival time of the route formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).\nThis field is mutually exclusive with **startTime** and cannot be used with the **results** _SCHEDULE_REPORT_ and _SCHEDULE_EVENT_ nor\nwhen **openingIntervals**, **serviceTime** or **workingHoursPreset** are specified.\nIf the date-time string does not include an explicit offset to UTC, the time will be interpreted as the local time of the destination waypoint.\nResponses will contain the offset to UTC specified in the request or that of the destination waypoint.\nThe date must not be before 1970-01-01T00:00:00+00:00 nor after 2037-12-31T23:59:59+00:00. \nFor best results it should not be more than one month in the past nor more than six months in the future.  \nSee [here](./Concepts/Date%20and%20Time.htm) for more information on the relevance of date and time.",
+            "description": "Defines the arrival time of the route formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).\nThis field is mutually exclusive with **startTime** and cannot be used with the **results** _SCHEDULE_REPORT_ and _SCHEDULE_EVENT_ nor\nwhen **openingIntervals**, **serviceTime** or **workingHoursPreset** are specified.\nIf the date-time string does not include an explicit offset to UTC, the time will be interpreted as the local time of the destination waypoint.\nResponses will contain the offset to UTC specified in the request or that of the destination waypoint.\nThe date must not be before 1970-01-01T00:00:00+00:00 nor after 2037-12-31T23:59:59+00:00. \nFor best results it should not be more than one month in the past nor more than six months in the future.  \nSee [here](./concepts/date-and-time) for more information on the relevance of date and time.",
             "type": "string",
             "nullable": true,
             "format": "date-time"
@@ -1435,145 +1981,80 @@
             "example": false
           },
           "avoid": {
-            "description": "Comma-separated list of features which should be avoided on the route.\nAvoided features could be included in a route if there is no possibility to reach the target otherwise.\n* `TOLL` - Avoid roads with toll.\n* `FERRIES` - Avoid ferries. Ferries which cannot be avoided can be requested with `COMBINED_TRANSPORT_EVENTS` and will appear with the type `BOAT`.\n* `RAIL_SHUTTLES` - Avoid rail shuttles. Rail shuttles which cannot be avoided can be requested with `COMBINED_TRANSPORT_EVENTS` and will appear with the type `RAIL`.  \nCannot be used with **options[routingMode]=MONETARY**.",
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/AvoidFeature"
-            }
+            "description": "Comma-separated list of features which should be avoided on the route.\nAvoided features could be included in a route if there is no possibility to reach the target otherwise.\n* `TOLL` - Avoid roads with toll.\n* `FERRIES` - Avoid ferries. Ferries which cannot be avoided can be requested with `COMBINED_TRANSPORT_EVENTS` and will appear with the type `BOAT`.\n* `RAIL_SHUTTLES` - Avoid rail shuttles. Rail shuttles which cannot be avoided can be requested with `COMBINED_TRANSPORT_EVENTS` and will appear with the type `RAIL`.  \nCannot be used with **options[routingMode]=MONETARY**.\n\nAvailable values are provided by type `AvoidFeature`.",
+            "type": "string",
+            "nullable": true
           },
           "blockIntersectingRoads": {
             "$ref": "#/components/schemas/BlockIntersectingRoads"
+          },
+          "customRoadAttributeScenarios": {
+            "nullable": true,
+            "description": "Comma-separated list of [custom road attribute scenarios](../data-api/concepts/custom-road-attributes) to be considered in the route calculation. \nEach scenario can be specified by its name or its ID. A shared scenario can only be specified by its ID.",
+            "type": "string"
           },
           "routingMode": {
             "$ref": "#/components/schemas/RoutingMode"
           }
         }
       },
-      "Vehicle": {
+      "VehicleParametersAtWaypoint": {
         "type": "object",
+        "description": "The vehicle parameters that change at a waypoint. A vehicle parameter specified at a waypoint overrides the\nsetting from the **profile** and **vehicle**. It is valid until the end of the route unless it is changed again\nat a subsequent waypoint.\n",
         "properties": {
-          "emissionStandard": {
-            "$ref": "#/components/schemas/EmissionStandard"
-          },
-          "engineType": {
-            "$ref": "#/components/schemas/EngineType"
-          },
-          "cylinderCapacity": {
-            "nullable": true,
-            "description": "The cylinder capacity of the vehicle [cm&#x00B3;].  \n",
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "example": 12000
-          },
-          "fuelType": {
-            "$ref": "#/components/schemas/FuelType"
-          },
-          "bioFuelRatio": {
-            "nullable": true,
-            "description": "The ratio of biofuel to conventional fuel [%], i.e. 10 for E10 with 10% biofuel.  \nRelevant for `emissions`.\n",
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0,
-            "maximum": 100,
-            "example": 0
-          },
           "averageFuelConsumption": {
-            "nullable": true,
-            "description": "The average fuel consumption of the vehicle.\nDepending on the **fuelType** [l/100km] for liquid fuel types or [kg/100km] for gaseous fuel types.  \nRelevant for `emissions`.\n",
+            "description": "The average fuel consumption of the vehicle.\nDepending on the **fuelType** [l/100km] for liquid fuel types or [kg/100km] for gaseous fuel types.\n\nSupported for **engineType** _COMBUSTION_  or _HYBRID_. Relevant for `emissions`.\n",
             "type": "number",
             "format": "double",
             "minimum": 0,
             "exclusiveMinimum": true,
             "example": 35
           },
-          "lowEmissionZoneTypes": {
-            "nullable": true,
-            "description": "Comma-separated list of the low-emission zone types of the vehicle.\nFor now, types are available only for Germany, so using more than one value is not meaningful.  \nRelevant for `routing`.\n",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LowEmissionZoneTypes"
-            }
-          },
-          "particleReductionClass": {
-            "$ref": "#/components/schemas/ParticleReductionClass"
-          },
-          "emptyWeight": {
-            "nullable": true,
-            "description": "The empty weight of the vehicle [kg].  \nRelevant for `routing`, `emissions`.\n",
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "example": 15000
+          "averageElectricityConsumption": {
+            "description": "The average electricity consumption of the vehicle if the **engineType** is _ELECTRIC_ or _HYBRID_ [kWh/100km].\n\nSupported for **engineType** _ELECTRIC_ or _HYBRID_. Relevant for `emissions`.\n",
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 115
           },
           "loadWeight": {
-            "nullable": true,
-            "description": "The weight of the vehicle's load [kg].  \nRelevant for `routing`, `emissions`.\n",
+            "description": "The weight of the vehicle's load [kg].\n\nRelevant for `routing`, `emissions`.\n",
             "type": "integer",
             "format": "int32",
             "minimum": 0,
             "example": 25000
           },
-          "totalPermittedWeight": {
-            "nullable": true,
-            "description": "The total permitted weight of the vehicle and load [kg].  \nRelevant for `routing`, `toll`, `emissions`.\n",
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "example": 40000
-          },
           "axleWeight": {
-            "nullable": true,
-            "description": "The maximum distributed weight that may be supported by an axle of the vehicle [kg].   Relevant for `routing`, `toll`.",
+            "description": "The maximum distributed weight that may be supported by an axle of the vehicle [kg].\n\nRelevant for `routing`, `toll`.\n",
             "type": "integer",
             "format": "int32",
             "minimum": 1,
             "example": 11500
           },
-          "numberOfAxles": {
-            "nullable": true,
-            "description": "The total number of axles of the vehicle including the trailers.   Relevant for `toll`.",
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "example": 5
-          },
           "height": {
-            "nullable": true,
-            "description": "The height of the vehicle [cm].  \nRelevant for `routing`, `toll`.\n",
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "example": 400
-          },
-          "heightAboveFrontAxle": {
-            "nullable": true,
-            "description": "The height above the front axle [cm].  \nRelevant for `toll`.\n",
+            "description": "The height of the vehicle [cm].\n\nRelevant for `routing`, `toll`.\n",
             "type": "integer",
             "format": "int32",
             "minimum": 1,
             "example": 400
           },
           "length": {
-            "nullable": true,
-            "description": "The length of the vehicle [cm].  \nRelevant for `routing`, `toll`.\n",
+            "description": "The length of the vehicle [cm].\n\nRelevant for `routing`, `toll`.\n",
             "type": "integer",
             "format": "int32",
             "minimum": 1,
             "example": 1650
           },
           "width": {
-            "nullable": true,
-            "description": "The width of the vehicle [cm].  \nRelevant for `routing`, `toll`.\n",
+            "description": "The width of the vehicle [cm].\n\nRelevant for `routing`, `toll`.\n",
             "type": "integer",
             "format": "int32",
             "minimum": 1,
             "example": 254
           },
           "hazardousMaterials": {
-            "nullable": true,
-            "description": "Comma-separated list of hazardous materials the vehicle has loaded.  \nRelevant for `routing`.\n",
+            "description": "The list of hazardous materials the vehicle has loaded.\nUse a list with only the _NONE_ value to specify that no hazardous material is loaded from that waypoint\non. An empty list means that the hazardous materials don't change at the waypoint. If _NONE_ is specified\nalong with other hazardous materials it is ignored.\n\nRelevant for `routing`.\n",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/HazardousMaterials"
@@ -1583,25 +2064,10 @@
             "$ref": "#/components/schemas/TunnelRestrictionCode"
           },
           "truckRoutes": {
-            "nullable": true,
-            "description": "Comma-separated list of truck routes the vehicle has to follow.  \nThis parameter will be ignored for non-truck profiles such as EUR_CAR, EUR_VAN, USA_1_PICKUP or AUS_LCV_LIGHT_COMMERCIAL.\n * `DE_LKWUEBERLSTVAUSNV`\n Preferred routes for long trucks in Germany, also known as Lang-LKW.\n * `NL_LZV`\n Preferred routes for long trucks in the Netherlands, also known as LZV (Langere en Zwaardere Vrachtautocombinatie).\n * `SE_BK_1`\n Public roads and bridges that support up to 64 t total permitted weight (Swedish Transport Administration).\n * `SE_BK_1`\n Public roads and bridges that support up to 51.4 t total permitted weight.\n Actual limit depends on wheelbase and axle weight (Swedish Transport Administration).\n * `SE_BK_3`\n Public roads and bridges that support up to 37.5 t total permitted weight.\n Actual limit depends on wheelbase and axle weight (Swedish Transport Administration).\n * `SE_BK_4`\n Public roads and bridges that support up to 74 t total permitted weight (draft summer 2018, Swedish Transport Administration).\n * `US_STAA`\n Routes that belong to the highway network as defined by the Surface Transportation Assistance Act in the US.\n * `US_TD`\n Part of a state-designated highway network for trucks in the US.\n * `AU_B_DOUBLE`\n B-Double routes as defined in Australia.\n * `AU_B_TRIPLE`\n B-Triple routes as defined in Australia.\n\nRelevant for `routing`.\nCannot be used with **options[routingMode]=MONETARY**.",
+            "description": "The list of truck routes the vehicle has to follow.\nThis parameter will be ignored for non-truck profiles such as EUR_CAR, EUR_VAN, USA_1_PICKUP or AUS_LCV_LIGHT_COMMERCIAL.\n * `DE_LKWUEBERLSTVAUSNV`\n Preferred routes for long trucks in Germany, also known as Lang-LKW.\n * `NL_LZV`\n Preferred routes for long trucks in the Netherlands, also known as LZV (Langere en Zwaardere Vrachtautocombinatie).\n * `NZ_HPMV`\n The network for High Productivity Motor Vehicles (HPMV) carrying the maximum loads available under a permit (New Zeland Transport Agency).\n * `SE_BK_1`\n Public roads and bridges that support up to 64 t total permitted weight (Swedish Transport Administration).\n * `SE_BK_2`\n Public roads and bridges that support up to 51.4 t total permitted weight.\n Actual limit depends on wheelbase and axle weight (Swedish Transport Administration).\n * `SE_BK_3`\n Public roads and bridges that support up to 37.5 t total permitted weight.\n Actual limit depends on wheelbase and axle weight (Swedish Transport Administration).\n * `SE_BK_4`\n Public roads and bridges that support up to 74 t total permitted weight (draft summer 2018, Swedish Transport Administration).\n * `US_STAA`\n Routes that belong to the highway network as defined by the Surface Transportation Assistance Act in the US.\n * `US_TD`\n Part of a state-designated highway network for trucks in the US.\n * `AU_B_DOUBLE`\n B-Double routes as defined in Australia.\n * `AU_B_DOUBLE_HML`\n Routes for B-Double vehicle combinations operating at Higher Mass Limits (HML) (Australian Transport Administration).\n * `AU_B_TRIPLE`\n B-Triple routes as defined in Australia.\n * `AU_B_TRIPLE_HML`\n Routes for B-Triple vehicle combinations operating at Higher Mass Limits (HML) (Australian Transport Administration).\n * `AU_AB_TRIPLE`\n Routes for AB-Triple vehicle combinations operating (Australian Transport Administration).\n * `AU_AB_TRIPLE_HML`\n Routes for AB-Triple vehicle combinations operating at Higher Mass Limits (HML) (Australian Transport Administration).\n * `NONE`\n Use a list with only the _NONE_ value for the truck routes\n at a waypoint to specify that no truck route must be used from that waypoint on. An empty list of truck routes\n at a waypoint means that the truck routes don't change at the waypoint. If _NONE_ is specified along with other\n truck routes it is ignored.\n\nRelevant for `routing`.\nCannot be used with **options[routingMode]=MONETARY**.\n",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TruckRoutes"
-            }
-          },
-          "commercial": {
-            "nullable": true,
-            "description": "Specifies if the vehicle usage is commercial.  \nRelevant for `toll`.\n",
-            "type": "boolean",
-            "example": false
-          },
-          "etcSubscriptions": {
-            "nullable": true,
-            "description": "A comma separated list of ETC Subscriptions.\nSee [here](./Concepts/Electronic%20Toll%20Collection.htm) for more information on available subscriptions.  \nRelevant for `toll`.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EtcSubscriptionTypes"
             }
           }
         }
@@ -1631,7 +2097,7 @@
           "trafficDelay": {
             "minimum": 0,
             "type": "integer",
-            "description": "The total delay due to live traffic on the route [s].\n\nThis value contains the sum of all traffic events on the route and will be non-zero only if **options[trafficMode]=REALISTIC**.\nSee [here](./Concepts/Traffic%20Modes.htm) for more information.",
+            "description": "The total delay due to live traffic on the route [s].\n\nThis value contains the sum of all traffic events on the route and will be non-zero only if **options[trafficMode]=REALISTIC**.\nSee [here](./concepts/traffic-modes) for more information.",
             "format": "int32",
             "example": 0
           },
@@ -1711,7 +2177,7 @@
           },
           "polyline": {
             "type": "string",
-            "description": "The polyline of the violation. Only present for **accessType** _ENTER_. Requires _VIOLATION_EVENTS_POLYLINE_ to be requested."
+            "description": "The polyline of the violation in the format specified by **options[polylineFormat]**. Only present for **accessType** _ENTER_. Requires _VIOLATION_EVENTS_POLYLINE_ to be requested."
           }
         }
       },
@@ -1771,12 +2237,16 @@
             "type": "integer",
             "description": "For **accessType** _ENTER_ this index points to the corresponding event with **accessType** _EXIT_ and vice-versa. Not present otherwise.",
             "format": "int32"
+          },
+          "polyline": {
+            "type": "string",
+            "description": "The polyline of the traffic event in the format specified by **options[polylineFormat]**. Only present for **accessType** _ENTER_. Requires _TRAFFIC_EVENTS_POLYLINE_ to be requested."
           }
         }
       },
       "Toll": {
         "type": "object",
-        "description": "Detailed information on the toll costs, providers and tariff information.",
+        "description": "Detailed information on the toll costs, providers and tariff information.  \nToll prices do not include VAT.\n",
         "properties": {
           "costs": {
             "$ref": "#/components/schemas/TollCosts"
@@ -1827,7 +2297,6 @@
           "etcSubscriptions": {
             "type": "array",
             "description": "The required electronic toll collection subscriptions for the payment method ELECTRONIC_TOLL_COLLECTION_SUBSCRIPTION.",
-            "nullable": true,
             "items": {
               "type": "string"
             }
@@ -1951,6 +2420,13 @@
             "format": "int32",
             "description": "The official distance defined by the toll operator [m].  It may be different from the travel distance. Only present if the toll operator provides an official distance.",
             "example": 142
+          },
+          "calculatedDistance": {
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32",
+            "description": "The calculated distance of the toll section on the current route.  It may be different from the official distance.",
+            "example": 141
           }
         }
       },
@@ -2200,7 +2676,7 @@
       },
       "TrafficMode": {
         "type": "string",
-        "description": "Defines how to consider traffic in a route calculation.\n * `REALISTIC` - Returns the most realistic **travelTime** and **distance** for the selected vehicle and the\n given **startTime** or **arrivalTime** (or the current time if none of them is specified).\n Takes into account the live traffic situation such as traffic jams or road works\n as well as the typical traffic situation at the time of day and the day of week of travel such as the rushhour\n on Monday morning or light traffic on Saturday evening.\n * `AVERAGE` - Returns the average **travelTime** and **distance** for the selected vehicle.\n If **startTime** or **arrivalTime** is specified, the typical traffic situation for that time of day and day of week will be considered such as the rushhour\n on Monday morning or light traffic on Saturday evening. Toll will be calculated according to that date and time.\n If none of them is specified the typical traffic situation will not be considered, and **travelTime** and **distance** are an average independent of when to travel.\n Toll will be calculated for an arbitrary Monday at noon.\n\nSee [here](./Concepts/Traffic%20Modes.htm) for more information.\nThis parameter will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.",
+        "description": "Defines how to consider traffic in a route calculation.\n * `REALISTIC` - Returns the most realistic **travelTime** and **distance** for the selected vehicle and the\n given **startTime** or **arrivalTime** (or the current time if none of them is specified).\n Takes into account the live traffic situation such as traffic jams or road works\n as well as the typical traffic situation at the time of day and the day of week of travel such as the rush-hour\n on Monday morning or light traffic on Saturday evening.\n * `AVERAGE` - Returns the average **travelTime** and **distance** for the selected vehicle.\n If **startTime** or **arrivalTime** is specified, the typical traffic situation for that time of day and day of week will be considered such as the rush-hour\n on Monday morning or light traffic on Saturday evening. Toll will be calculated according to that date and time.\n If none of them is specified the typical traffic situation will not be considered, and **travelTime** and **distance** are an average independent of when to travel.\n Toll will be calculated for an arbitrary Monday at noon.\n\nSee [here](./concepts/traffic-modes) for more information.\nThis parameter will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.",
         "default": "REALISTIC",
         "enum": [
           "REALISTIC",
@@ -2213,7 +2689,7 @@
       },
       "ReachableTrafficMode": {
         "type": "string",
-        "description": "Defines how to consider traffic in a reachable areas or a reachable locations calculation.\n * `REALISTIC` - Uses the most realistic **travelTime** and **distance** for the selected vehicle and the\n given **referenceTime** (or the current time if none **referenceTime** is specified).\n Takes into account the live traffic situation such as traffic jams or road works\n as well as the typical traffic situation at the time of day and the day of week of travel such as the rushhour\n on Monday morning or light traffic on Saturday evening.\n * `AVERAGE` - Uses the average **travelTime** and **distance** for the selected vehicle.\n If **referenceTime** is specified, the typical traffic situation for that time of day and day of week will be considered such as the rushhour\n on Monday morning or light traffic on Saturday evening.\n If no **referenceTime** is specified the typical traffic situation will not be considered, and **travelTime** and **distance** are an average independent of when to travel.\n\nSee [here](./Concepts/Traffic%20Modes.htm) for more information.\nThis parameter will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.",
+        "description": "Defines how to consider traffic in a reachable areas or a reachable locations calculation.\n * `REALISTIC` - Uses the most realistic **travelTime** and **distance** for the selected vehicle and the\n given **referenceTime** (or the current time if none **referenceTime** is specified).\n Takes into account the live traffic situation such as traffic jams or road works\n as well as the typical traffic situation at the time of day and the day of week of travel such as the rush-hour\n on Monday morning or light traffic on Saturday evening.\n * `AVERAGE` - Uses the average **travelTime** and **distance** for the selected vehicle.\n If **referenceTime** is specified, the typical traffic situation for that time of day and day of week will be considered such as the rush-hour\n on Monday morning or light traffic on Saturday evening.\n If no **referenceTime** is specified the typical traffic situation will not be considered, and **travelTime** and **distance** are an average independent of when to travel.\n\nSee [here](./concepts/traffic-modes) for more information.\nThis parameter will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.",
         "default": "AVERAGE",
         "enum": [
           "REALISTIC",
@@ -2237,7 +2713,7 @@
           "MONETARY"
         ],
         "default": "FAST",
-        "description": "Specifies which objective function should be used for the route calculation.  \n* _FAST_ is the default which returns a route considering a tradeoff between distance an travel time.\nAll vehicle-specific restrictions are properly considered and violated only, if no other route can be found.\n* _SHORT_ returns a route which is probably shorter but accepting longer travel times.\nThe resulting route is still sensible and can be driven with the given vehicle, but it may disregard restrictions like driving through residential areas.\n* _MONETARY_ assigns monetary costs to each road segment according the provided cost parameters and the vehicles properties like its consumption.\nFurthermore, toll costs are integrated as well. See [here](./Concepts/Monetary%20Costs.htm) for more information."
+        "description": "Specifies which objective function should be used for the route calculation.  \n* _FAST_ is the default which returns a route considering a tradeoff between distance an travel time.\nAll vehicle-specific restrictions are properly considered and violated only, if no other route can be found.\n* _SHORT_ returns a route which is probably shorter but accepting longer travel times.\nThe resulting route is still sensible and can be driven with the given vehicle, but it may disregard restrictions like driving through residential areas.\n* _MONETARY_ assigns monetary costs to each road segment according the provided cost parameters and the vehicles properties like its consumption.\nFurthermore, toll costs are integrated as well. See [here](./concepts/monetary-costs) for more information."
       },
       "PolylineFormat": {
         "type": "string",
@@ -2284,7 +2760,7 @@
           "trafficDelay": {
             "minimum": 0,
             "type": "integer",
-            "description": "The total delay due to live traffic on this alternative route [s].\n\nThis value contains the sum of all traffic events on this alternative route and  will be non-zero only if **options[trafficMode]=REALISTIC**.\nSee [here](./Concepts/Traffic%20Modes.htm) for more information.",
+            "description": "The total delay due to live traffic on this alternative route [s].\n\nThis value contains the sum of all traffic events on this alternative route and  will be non-zero only if **options[trafficMode]=REALISTIC**.\nSee [here](./concepts/traffic-modes) for more information.",
             "format": "int32",
             "example": 0
           },
@@ -2369,7 +2845,6 @@
         ],
         "properties": {
           "currency": {
-            "nullable": true,
             "description": "The currency code according to [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217).",
             "type": "string",
             "pattern": "[A-Z]{3}"
@@ -2401,7 +2876,7 @@
           "tollCost": {
             "minimum": 0,
             "type": "number",
-            "description": "The toll cost based on the route and the vehicle.",
+            "description": "The toll cost based on the route and the vehicle.  \nToll prices do not include VAT.\n",
             "format": "double"
           }
         },
@@ -2409,21 +2884,13 @@
       },
       "AllowedCountries": {
         "nullable": true,
-        "description": "The list of countries the route is allowed to pass. By default, all countries are allowed. If this parameter is present, only these countries are allowed to be passed,\ni.e. drive only in these countries. This parameter is mutually exclusive with **prohibitedCountries**.\nCountries are represented according to their [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) if referring to a subdivision.",
-        "type": "array",
-        "items": {
-          "type": "string",
-          "pattern": "[A-Z]{2}|[A-Z]{2}-[A-Z0-9]{1,3}"
-        }
+        "description": "Comma-separated list of countries the route is allowed to pass. By default, all countries are allowed. If this parameter is present, only these countries are allowed to be passed,\ni.e. drive only in these countries. This parameter is mutually exclusive with **prohibitedCountries**.\nCountries are represented according to their [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) if referring to a subdivision.",
+        "type": "string"
       },
       "ProhibitedCountries": {
         "nullable": true,
-        "description": "The list of countries the route must not pass. By default, all countries are allowed. If this parameter is present, all but the given countries are allowed to be passed,\ni.e. do not drive in these countries. This parameter is mutually exclusive with **allowedCountries**.\nCountries are represented according to their [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) if referring to a subdivision.",
-        "type": "array",
-        "items": {
-          "type": "string",
-          "pattern": "[A-Z]{2}|[A-Z]{2}-[A-Z0-9]{1,3}"
-        }
+        "description": "Comma-separated list of countries the route must not pass. By default, all countries are allowed. If this parameter is present, all but the given countries are allowed to be passed,\ni.e. do not drive in these countries. This parameter is mutually exclusive with **allowedCountries**.\nCountries are represented according to their [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) if referring to a subdivision.",
+        "type": "string"
       },
       "ReachableAreasId": {
         "type": "object",
@@ -2602,7 +3069,7 @@
           },
           "referenceTime": {
             "nullable": true,
-            "description": "Defines the start time for **drivingDirection** _OUTBOUND_ or the arrival time for **drivingDirection** _INBOUND_ formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).\nIf none of them is specified the current time will be used.\nIf the date-time string does not include an explicit offset to UTC, the time will be interpreted as the local time of the waypoint.\nResponses will contain the offset to UTC specified in the request or that of the waypoint.\nThe date must not be before 1970-01-01T00:00:00+00:00 nor after 2037-12-31T23:59:59+00:00.\nFor best results it should not be more than one month in the past nor more than six months in the future.\nSee [here](./Concepts/Date%20and%20Time.htm) for more information on the relevance of date and time.",
+            "description": "Defines the start time for **drivingDirection** _OUTBOUND_ or the arrival time for **drivingDirection** _INBOUND_ formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).\nIf none of them is specified the current time will be used.\nIf the date-time string does not include an explicit offset to UTC, the time will be interpreted as the local time of the waypoint.\nResponses will contain the offset to UTC specified in the request or that of the waypoint.\nThe date must not be before 1970-01-01T00:00:00+00:00 nor after 2037-12-31T23:59:59+00:00.\nFor best results it should not be more than one month in the past nor more than six months in the future.\nSee [here](./concepts/date-and-time) for more information on the relevance of date and time.",
             "type": "string",
             "format": "date-time",
             "example": "2020-12-04T06:00:00+00:00"
@@ -2617,13 +3084,7 @@
             "$ref": "#/components/schemas/ProhibitedCountries"
           },
           "blockIntersectingRoads": {
-            "nullable": true,
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/BlockIntersectingRoads"
-              }
-            ],
-            "description": "Pipe-separated list of polylines.  \nRoads and combined transports that intersect the given polylines will be considered as blocked by the routing engine.  \nEach list element is a polyline. Each point is a coordinate of latitude and longitude. Coordinates and points are separated by a comma.  \nFormat: `<poly1_lat1>,<poly1_lon1>,...,<poly1_latN>,<poly1_lonN>|<poly2_lat1>,<poly2_lon1>,...,<poly2_latN>,<poly2_lonN>|...`  \nNotes:\n* Be aware of the URL length restrictions.\n* Requests will be rejected if at least one provided polyline\n  * does not consist of an even number of coordinates,\n  * contains invalid coordinates or\n  * intersects more than 5000 road segments.\n"
+            "$ref": "#/components/schemas/BlockIntersectingRoads"
           }
         }
       },
@@ -2670,7 +3131,10 @@
           "routeId": {
             "type": "string",
             "format": "uuid",
-            "description": "Instead of the list of waypoints, a **routeId** from a previously calculated route or a matched track can be entered.\nSee [here](./Concepts/Waypoints.htm) for more information."
+            "description": "Instead of the list of waypoints, a **routeId** from a previously calculated route or a matched track can be entered.\nSee [here](./concepts/waypoints) for more information."
+          },
+          "driver": {
+            "$ref": "#/components/schemas/DriverBody"
           }
         }
       },
@@ -2717,6 +3181,9 @@
           },
           "openingIntervals": {
             "$ref": "#/components/schemas/OpeningIntervals"
+          },
+          "vehicleParameters": {
+            "$ref": "#/components/schemas/VehicleParametersAtWaypoint"
           }
         }
       },
@@ -2745,6 +3212,9 @@
           },
           "openingIntervals": {
             "$ref": "#/components/schemas/OpeningIntervals"
+          },
+          "vehicleParameters": {
+            "$ref": "#/components/schemas/VehicleParametersAtWaypoint"
           }
         }
       },
@@ -2755,7 +3225,7 @@
           "longitude",
           "radius"
         ],
-        "description": "A _manipulate-route wapoint_ will not actually be reached but it influences the route course, so that the route passes an area defined by the given radius.\nThis waypoint will not appear as a waypoint event in the response and may not be used as start and destination.",
+        "description": "A _manipulate-route waypoint_ will not actually be reached but it influences the route course, so that the route passes an area defined by the given radius.\nThis waypoint will not appear as a waypoint event in the response and may not be used as start and destination.",
         "properties": {
           "latitude": {
             "$ref": "#/components/schemas/Latitude"
@@ -2801,7 +3271,7 @@
       },
       "OpeningIntervals": {
         "type": "array",
-        "description": "The opening intervals at this waypoint, each specified by two points in time - the beginning and the end of the interval.\nLeaving this parameter empty means that the waypoint is always open. Service can only start within one of the opening intervals.",
+        "description": "The opening intervals at this waypoint, each specified by two points in time - the beginning and the end of the interval.\nLeaving this parameter empty means that the waypoint is always open. Service can only start within one of the opening intervals.\nIf the vehicle does not arrive at a waypoint within an opening interval, a waiting time will be scheduled. \nWhen using a multi-day **workingHoursPreset** this waiting time will usually be used for daily rests instead, in order\nto continue the route with a rested driver.",
         "items": {
           "$ref": "#/components/schemas/TimeInterval"
         }
@@ -2888,142 +3358,92 @@
         }
       },
       "WorkingHoursPreset": {
-        "description": "Enables the calculation of break and rest times according to the selected rules.\nBreaks and rests will be added to the **travelTime**, details can be requested through the _SCHEDULE_EVENTS_.\nThis parameter will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.\n  * `EU_DRIVING_TIME_REGULATION_FOR_SINGLE_DAY` - Based on Regulation (EC) 561/2006 of the European Parliament and of the Council.\n  Break time 45 min, maximum driving time between breaks 4.5 hours, maximum driving time 9 hours, maximum travel time 13 hours.\n  * `EU_WORKING_TIME_DIRECTIVE_FOR_SINGLE_DAY` - Based on Directive 2002/15/EC of the European Parliament and of the Council \"on the organisation of the working time of persons performing mobile road transport activities\".\n  Break time 30 min, maximum working time between breaks 6 hours, maximum travel time 9.5 hours.\n  * `EU_DRIVING_TIME_REGULATION_FOR_MULTIPLE_DAYS ` - Based on Regulation (EC) 561/2006 of the European Parliament and of the Council.\n  Break time 45 min, maximum driving time between breaks 4.5 hours,\n  daily rest time 11 hours, maximum driving time between daily rests 9 hours, maximum travel time between daily rests 13 hours,\n  maximum driving time 56 hours, maximum travel time 144 hours.\n  * `US_HOURS_OF_SERVICE_REGULATIONS_FOR_SINGLE_DAY` - Based on Hours of Service (HOS) of Drivers as issued by the Federal Motor Carrier Safety Administration (FMCSA).\n  Break time 30 min, maximum driving time between breaks 8 hours, maximum driving time 11 hours, maximum travel time 14 hours.\n  * `US_HOURS_OF_SERVICE_REGULATIONS_FOR_MULTIPLE_DAYS` - Based on Hours of Service (HOS) of Drivers as issued by the Federal Motor Carrier Safety Administration (FMCSA).\n  Break time 30 min, maximum driving time between breaks 8 hours,\n  daily rest time 10 hours, maximum driving time between daily rests 11 hours, maximum travel time between daily rests 14 hours.\n\nFor details see this [concept](../Routing%20API/Concepts/Drivers%20Working%20Hours.htm).",
+        "description": "Enables the calculation of break and rest times according to the selected rules.\nBreaks and rests will be added to the **travelTime**, details can be requested through the _SCHEDULE_EVENTS_.\nThis parameter will be ignored for non-motorized profiles such as _BICYCLE_ or _PEDESTRIAN_.\n  * `EU_DRIVING_TIME_REGULATION_FOR_SINGLE_DAY` - Based on Regulation (EC) 561/2006 of the European Parliament and of the Council.\n  Break time 45 min, maximum driving time between breaks 4.5 hours, maximum driving time 9 hours, maximum travel time 13 hours.\n  * `EU_DRIVING_TIME_REGULATION_FOR_LONG_SINGLE_DAY` - In contrast to `EU_DRIVING_TIME_REGULATION_FOR_SINGLE_DAY`,\n  the exception rules \"Maximum driving time may be extended to 10h twice a week.\" and \"A daily rest may be reduced to 9h three times between weekly rests.\"\n  are observed in so far as the driving time limit is extended and the daily rest time is reduced.\n  * `EU_WORKING_TIME_DIRECTIVE_FOR_SINGLE_DAY` - Based on Directive 2002/15/EC of the European Parliament and of the Council \"on the organisation of the working time of persons performing mobile road transport activities\".\n  Break time 30 min, maximum working time between breaks 6 hours, maximum travel time 9.5 hours.\n  * `EU_WORKING_TIME_DIRECTIVES_FOR_LONG_SINGLE_DAY` - Makes sure that the standard rules of the EU directives 2003/88/EC and 2002/15/EC that are applicable for a route within a long single day are observed.\n  If working hours total more than 9h, a break must be 45min long. Here, a working time of at most 10h is guaranteed.\n  * `EU_DRIVING_TIME_REGULATION_FOR_MULTIPLE_DAYS ` - Based on Regulation (EC) 561/2006 of the European Parliament and of the Council.\n  Break time 45 min, maximum driving time between breaks 4.5 hours,\n  daily rest time 11 hours, maximum driving time between daily rests 9 hours, maximum travel time between daily rests 13 hours,\n  maximum driving time 56 hours, maximum travel time 144 hours.\n  * `EU_DRIVING_TIME_REGULATION_FOR_TEAM_AND_MULTIPLE_DAYS` - When two drivers form a team, they can take turns.\n  In contrast to `EU_DRIVING_TIME_REGULATION_FOR_MULTIPLE_DAYS`, no breaks are scheduled and the daily rest time limits are raised.\n  * `US_HOURS_OF_SERVICE_REGULATIONS_FOR_SINGLE_DAY` - Based on Hours of Service (HOS) of Drivers as issued by the Federal Motor Carrier Safety Administration (FMCSA).\n  Break time 30 min, maximum driving time between breaks 8 hours, maximum driving time 11 hours, maximum travel time 14 hours.\n  * `US_HOURS_OF_SERVICE_REGULATIONS_FOR_SHORT_HAUL_AND_SINGLE_DAY` - Makes sure that the standard rules of the HOS regulations in 49 CFR 395 that are applicable for a route within a single day are observed.\n  It is assumed that the short-haul exception does apply so breaks are not scheduled.\n  * `US_HOURS_OF_SERVICE_REGULATIONS_FOR_MULTIPLE_DAYS` - Based on Hours of Service (HOS) of Drivers as issued by the Federal Motor Carrier Safety Administration (FMCSA).\n  Break time 30 min, maximum driving time between breaks 8 hours,\n  daily rest time 10 hours, maximum driving time between daily rests 11 hours, maximum travel time between daily rests 14 hours.\n\nIf this parameter is given both as query parameter and in the body then it must match. Otherwise an error is returned.  \nFor details see this [concept](./concepts/drivers-working-hours).",
         "type": "string",
         "nullable": true,
         "enum": [
           "EU_DRIVING_TIME_REGULATION_FOR_SINGLE_DAY",
+          "EU_DRIVING_TIME_REGULATION_FOR_LONG_SINGLE_DAY",
           "EU_WORKING_TIME_DIRECTIVE_FOR_SINGLE_DAY",
+          "EU_WORKING_TIME_DIRECTIVES_FOR_LONG_SINGLE_DAY",
           "EU_DRIVING_TIME_REGULATION_FOR_MULTIPLE_DAYS",
+          "EU_DRIVING_TIME_REGULATION_FOR_TEAM_AND_MULTIPLE_DAYS",
           "US_HOURS_OF_SERVICE_REGULATIONS_FOR_SINGLE_DAY",
+          "US_HOURS_OF_SERVICE_REGULATIONS_FOR_SHORT_HAUL_AND_SINGLE_DAY",
           "US_HOURS_OF_SERVICE_REGULATIONS_FOR_MULTIPLE_DAYS"
         ],
         "x-enum-varnames": [
           "EU_DRIVING_TIME_REGULATION_FOR_SINGLE_DAY",
+          "EU_DRIVING_TIME_REGULATION_FOR_LONG_SINGLE_DAY",
           "EU_WORKING_TIME_DIRECTIVE_FOR_SINGLE_DAY",
+          "EU_WORKING_TIME_DIRECTIVES_FOR_LONG_SINGLE_DAY",
           "EU_DRIVING_TIME_REGULATION_FOR_MULTIPLE_DAYS",
+          "EU_DRIVING_TIME_REGULATION_FOR_TEAM_AND_MULTIPLE_DAYS",
           "US_HOURS_OF_SERVICE_REGULATIONS_FOR_SINGLE_DAY",
+          "US_HOURS_OF_SERVICE_REGULATIONS_FOR_SHORT_HAUL_AND_SINGLE_DAY",
           "US_HOURS_OF_SERVICE_REGULATIONS_FOR_MULTIPLE_DAYS"
         ]
       },
-      "EtcSubscriptionTypes": {
-        "type": "string",
-        "example": "DE_TOLLCOLLECT",
-        "enum": [
-          "AT_GOBOX",
-          "BE_TELETOL",
-          "BE_VIAPASS",
-          "CH_LSVA",
-          "DE_QUICKBOX",
-          "DE_TOLLCOLLECT",
-          "DE_WARNOWTUNNEL_RFID",
-          "DK_BROPAS_BUSINESS",
-          "IT_TELEPASS",
-          "NL_TELECARD",
-          "NL_TTAG",
-          "NO_AUTOPASS",
-          "PT_VIA_VERDE",
-          "US_APASS",
-          "US_BREEZEBY",
-          "US_DOWNBEACH_EXPRESSPASS",
-          "US_EPASS",
-          "US_EXPRESSACCOUNT",
-          "US_EXPRESSCARD",
-          "US_EXPRESSPASS",
-          "US_EXPRESSTOLL",
-          "US_EZPASS",
-          "US_EZTAG",
-          "US_FASTRAK",
-          "US_GEAUXPASS",
-          "US_GOODTOGO",
-          "US_GOPASS",
-          "US_IPASS",
-          "US_KTAG",
-          "US_LEEWAY",
-          "US_MACKINACBRIDGE_MACPASS",
-          "US_MARYLAND_EZPASS",
-          "US_MASSACHUSETTS_EZPASS",
-          "US_NC_QUICKPASS",
-          "US_NEWHAMPSHIRE_EZPASS",
-          "US_NEWJERSEY_EZPASS",
-          "US_NEWYORK_EZPASS",
-          "US_NEXPRESS",
-          "US_OHIO_EZPASS",
-          "US_PALPASS",
-          "US_PIKEPASS",
-          "US_RIVERLINK",
-          "US_RIVERLINK_NOTRANSPONDER",
-          "US_SEAWAYTRANSITCARD",
-          "US_SUNPASS",
-          "US_TOLLTAG",
-          "US_TXTAG",
-          "US_VIRGINIA_EZPASS",
-          "US_WESTVIRGINIA_EZPASS",
-          "US_PEACHPASS",
-          "US_NEXUS",
-          "US_DELAWARE_EZPASS",
-          "US_GROSSEILETOLLBRIDGE_PASSTAG",
-          "US_EZPASS_PAYBYPLATE"
+      "DriverBody": {
+        "type": "object",
+        "required": [
+          "workingHoursPreset"
         ],
-        "x-enum-varnames": [
-          "AT_GOBOX",
-          "BE_TELETOL",
-          "BE_VIAPASS",
-          "CH_LSVA",
-          "DE_QUICKBOX",
-          "DE_TOLLCOLLECT",
-          "DE_WARNOWTUNNEL_RFID",
-          "DK_BROPAS_BUSINESS",
-          "IT_TELEPASS",
-          "NL_TELECARD",
-          "NL_TTAG",
-          "NO_AUTOPASS",
-          "PT_VIA_VERDE",
-          "US_APASS",
-          "US_BREEZEBY",
-          "US_DOWNBEACH_EXPRESSPASS",
-          "US_EPASS",
-          "US_EXPRESSACCOUNT",
-          "US_EXPRESSCARD",
-          "US_EXPRESSPASS",
-          "US_EXPRESSTOLL",
-          "US_EZPASS",
-          "US_EZTAG",
-          "US_FASTRAK",
-          "US_GEAUXPASS",
-          "US_GOODTOGO",
-          "US_GOPASS",
-          "US_IPASS",
-          "US_KTAG",
-          "US_LEEWAY",
-          "US_MACKINACBRIDGE_MACPASS",
-          "US_MARYLAND_EZPASS",
-          "US_MASSACHUSETTS_EZPASS",
-          "US_NC_QUICKPASS",
-          "US_NEWHAMPSHIRE_EZPASS",
-          "US_NEWJERSEY_EZPASS",
-          "US_NEWYORK_EZPASS",
-          "US_NEXPRESS",
-          "US_OHIO_EZPASS",
-          "US_PALPASS",
-          "US_PIKEPASS",
-          "US_RIVERLINK",
-          "US_RIVERLINK_NOTRANSPONDER",
-          "US_SEAWAYTRANSITCARD",
-          "US_SUNPASS",
-          "US_TOLLTAG",
-          "US_TXTAG",
-          "US_VIRGINIA_EZPASS",
-          "US_WESTVIRGINIA_EZPASS",
-          "US_PEACHPASS",
-          "US_NEXUS",
-          "US_DELAWARE_EZPASS",
-          "US_GROSSEILETOLLBRIDGE_PASSTAG",
-          "US_EZPASS_PAYBYPLATE"
-        ]
+        "properties": {
+          "workingHoursPreset": {
+            "$ref": "#/components/schemas/WorkingHoursPreset"
+          },
+          "workLogbook": {
+            "$ref": "#/components/schemas/WorkLogbook"
+          }
+        }
+      },
+      "WorkLogbook": {
+        "description": "Defines the accumulated driving, working and travel times since the last break or daily rest. For details see this [concept](./concepts/drivers-working-hours).",
+        "type": "object",
+        "required": [
+          "lastTimeTheDriverWorked"
+        ],
+        "properties": {
+          "lastTimeTheDriverWorked": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "example": "2020-12-04T06:00:00+00:00",
+            "description": "The last time the driver worked formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).  \nThe date must not be before 1970-01-01T00:00:00+00:00 nor after 2037-12-31T23:59:59+00:00. \nThe date must provide an offset to UTC.  \nSee [here](./concepts/date-and-time) for more information on the relevance of date and time."
+          },
+          "accumulatedDrivingTimeSinceLastBreak": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0,
+            "description": "Accumulated driving time since end of last break [s], this includes all time behind the wheel.  \nValues higher than the maximum driving time between breaks of the **workingHoursPreset** are capped and effectively equal to the value given by the preset.\n"
+          },
+          "accumulatedWorkingTimeSinceLastBreak": {
+            "nullable": true,
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "description": "Accumulated working time since end of last break [s], this includes driving time, service time at depot and customers, and idle time if lower than working time threshold.    \nValues higher than the maximum working time between breaks of the **workingHoursPreset** are capped and effectively equal to the value given by the preset. May not be smaller than **accumulatedDrivingTimeSinceLastBreak** if the value is specified. If no other value is specified, the default value is 0.\n"
+          },
+          "accumulatedDrivingTimeSinceLastDailyRest": {
+            "nullable": true,
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "description": "Accumulated driving time since end of last daily rest [s], this includes all time behind the wheel.  \nValues higher than the maximum driving time between daily rests of the **workingHoursPreset** are capped and effectively equal to the value given by preset. May not be smaller than **accumulatedDrivingTimeSinceLastBreak** if the value is specified. If no other value is specified, the default value is 0.\n"
+          },
+          "accumulatedTravelTimeSinceLastDailyRest": {
+            "nullable": true,
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "description": "Accumulated travel time since end of last daily rest [s], this includes all time since the last daily rest.  \nValues higher than maximum travel time between daily rests of the **workingHoursPreset** are capped and effectively equal to the value given by the preset. May not be smaller than **accumulatedWorkingTimeSinceLastBreak** or **accumulatedDrivingTimeSinceLastDailyRest** if the values are specified. If no other value is specified, the default value is 0.\n"
+          }
+        }
       },
       "BlockIntersectingRoads": {
-        "description": "Pipe-separated list of polylines.  \nRoads and combined transports that intersect the given polylines will be considered as blocked by the routing engine.\nIf they have to be used to connect two waypoints then the route will be reported as violated and correspondingly violation events with type **BLOCKED_ROAD_BY_INTERSECTION** will be reported if violation events are requested.  \nEach list element is a polyline. Each point is a coordinate of latitude and longitude. Coordinates and points are separated by a comma.  \nFormat: `<poly1_lat1>,<poly1_lon1>,...,<poly1_latN>,<poly1_lonN>|<poly2_lat1>,<poly2_lon1>,...,<poly2_latN>,<poly2_lonN>|...`  \nNotes:\n* Be aware of the URL length restrictions.\n* Requests will be rejected if at least one provided polyline\n  * does not consist of an even number of coordinates,\n  * contains invalid coordinates or\n  * intersects more than 5000 road segments.\n",
+        "description": "Pipe-separated list of polylines.  \nRoads and combined transports that intersect the given polylines will be considered as blocked.\nEach list element is a polyline. Each point is a coordinate of latitude and longitude. Coordinates and points are separated by a comma.\nFormat: `<poly1_lat1>,<poly1_lon1>,...,<poly1_latN>,<poly1_lonN>|<poly2_lat1>,<poly2_lon1>,...,<poly2_latN>,<poly2_lonN>|...`  \nNotes:\n* Be aware of the URL length restrictions.\n* If there is no other route connecting two waypoints the will be reported as violated and correspondingly violation events with type **BLOCKED_ROAD_BY_INTERSECTION** will be reported if violation events are requested.\n* Requests will be rejected if at least one provided polyline\n  * does not consist of an even number of coordinates,\n  * consists of less than two points,\n  * contains invalid coordinates or\n  * intersects more than 5000 road segments.\n",
         "nullable": true,
         "type": "string",
         "example": "49.8,9.9,49.9,10|33.1,-111.1,33.0,-111.2"
@@ -3036,7 +3456,7 @@
             "format": "double",
             "minimum": 0,
             "nullable": true,
-            "description": "Specifies the cost per kilometer. This value can contain the cost from the energy consumption, but it also\npossible to define the energy costs using **monetaryCostOptions[costPerFuelUnit]**.\nIf it is not specified the default value depends on the used **profile**. The default value of the profile can change at any time."
+            "description": "Specifies the cost per kilometer. This value can contain the cost from the energy consumption, but it also\npossible to define the energy costs using **monetaryCostOptions[costPerKwh]** and **monetaryCostOptions[costPerFuelUnit]**.\nIf it is not specified the default value depends on the used **profile**. The default value of the profile can change at any time."
           },
           "workingCostPerHour": {
             "type": "number",
@@ -3045,12 +3465,175 @@
             "nullable": true,
             "description": "Specifies the cost per hour. It is not applied to service, break or rest periods.\nIf it is not specified the default value depends on the used **profile**. The default value of the profile can change at any time."
           },
+          "costPerKwh": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Specifies the cost per kilowatt hour. Only relevant for **vehicle[engineType]** _ELECTRIC_ and _HYBRID_."
+          },
           "costPerFuelUnit": {
             "type": "number",
             "format": "double",
             "minimum": 0,
             "nullable": true,
-            "description": "Specifies the cost per fuel unit (per liter Diesel or per kg CNG). Only used for **vehicle[engineType]** _COMBUSTION_ and _HYBRID_.\nIf it is not specified the default value depends on the used **profile**. The default value of the profile can change at any time."
+            "description": "Specifies the cost per fuel unit (per liter Diesel or per kg CNG). Only used for **vehicle[engineType]** _COMBUSTION_ and _HYBRID_."
+          }
+        }
+      },
+      "PositionAtWaypoint": {
+        "type": "object",
+        "description": "The vehicle position if it is at a waypoint.\nThis parameter is mutually exclusive with **position**.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "description": "The name of the waypoint.",
+            "type": "string",
+            "nullable": true
+          },
+          "performedServiceTime": {
+            "description": "The service time [s] which has already been performed.",
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          }
+        }
+      },
+      "PositionOnRoute": {
+        "type": "object",
+        "description": "The position of the vehicle if the vehicle position is not at a waypoint but somewhere on the route.\nThis parameter is mutually exclusive with **waypoint**.",
+        "required": [
+          "latitude",
+          "longitude",
+          "nextWaypointName"
+        ],
+        "properties": {
+          "latitude": {
+            "maximum": 90,
+            "minimum": -90,
+            "type": "number",
+            "nullable": true,
+            "description": "The latitude value in degrees (WGS84/EPSG:4326) from south to north.",
+            "format": "double",
+            "example": 49.480301
+          },
+          "longitude": {
+            "maximum": 180,
+            "minimum": -180,
+            "type": "number",
+            "nullable": true,
+            "description": "The longitude value in degrees (WGS84/EPSG:4326) from west to east.",
+            "format": "double",
+            "example": 6.110667
+          },
+          "nextWaypointName": {
+            "description": "The name of the next waypoint on the route.",
+            "type": "string",
+            "nullable": true
+          },
+          "heading": {
+            "description": "The current heading of the vehicle [deg]. It denotes the driving direction,\nNorth represents 0 degrees, East represents 90 degrees, South represents 180 degrees, West represents 270 degrees.\n\nIf specified and if the heading of the vehicle is not in the direction of the route near the given **position**,\nit is assumed that the vehicle has left the route so that a new route will be calculated. This new route will then be \ncalculated from the road closest to the position matching the vehicle heading. For more information see\nthis [concept](./concepts/estimated-time-arrival).",
+            "type": "integer",
+            "nullable": true,
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 360
+          },
+          "headingTolerance": {
+            "description": "Denotes the tolerance between **heading** and the direction of a road, i.e. roads with a direction of **heading**±**headingTolerance** are taken into account. Applies only if **heading** is specified.",
+            "type": "integer",
+            "default": 45,
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 180
+          }
+        }
+      },
+      "EtaResponse": {
+        "type": "object",
+        "description": "The response of an ETA calculation.",
+        "required": [
+          "remainingWaypoints"
+        ],
+        "properties": {
+          "remainingWaypoints": {
+            "description": "The ETA and the remaining distance and travel time to the waypoints not yet reached by the route.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RemainingWaypoint"
+            },
+            "minItems": 1
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "If the route has been recalculated, this is the ID of the new route.\nThat will happen when it is likely that the vehicle has left the route, so the vehicle position is too far away from the route,\nor when the estimated time of arrival at the last waypoint is delayed in a way that another route may result in arriving earlier."
+          },
+          "warnings": {
+            "description": "A list of warnings concerning the validity of the result.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "RemainingWaypoint": {
+        "type": "object",
+        "description": "The ETA and the remaining distance and travel time to that waypoint.",
+        "required": [
+          "name",
+          "estimatedTimeOfArrival",
+          "distance",
+          "travelTime",
+          "trafficDelay",
+          "waitingTime",
+          "scheduleViolations"
+        ],
+        "properties": {
+          "name": {
+            "description": "The name of the waypoint.",
+            "type": "string"
+          },
+          "estimatedTimeOfArrival": {
+            "description": "The estimated time of arrival at the waypoint formatted according to [RFC 3339](https://tools.ietf.org/html/rfc3339).",
+            "type": "string",
+            "format": "date-time"
+          },
+          "distance": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "The distance from the current position to the waypoint [m].",
+            "format": "int32"
+          },
+          "travelTime": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "The travel time from the current position to the waypoint [s].",
+            "format": "int32"
+          },
+          "trafficDelay": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "The delay due to live traffic from the current position to the waypoint [s].",
+            "format": "int32"
+          },
+          "waitingTime": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "The waiting time from the current position to the waypoint [s].",
+            "format": "int32"
+          },
+          "scheduleViolations": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+              "$ref": "#/components/schemas/ScheduleViolationType"
+            },
+            "description": "Contains the list of violated schedule restrictions at this waypoint and up to this waypoint."
           }
         }
       }
