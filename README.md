@@ -6,6 +6,6 @@ Demonstrates how to:
 * Calculate a route using the [Routing Api](https://developer.myptv.com/en/documentation/routing-api).
 * Display the route on a map.
 
-Get your free API key at https://developer.myptv.com/ and add it in Form1.cs.
+Get your free API key at https://developer.myptv.com/ and add it in [Form1.cs](https://github.com/oliverheilig/PtvDeveloperForms/blob/8cecf60679ccfe60441dcd014c9cfa4887366eb7/Form1.cs#L23).
 
 ![screenshot](https://raw.githubusercontent.com/oliverheilig/PtvDeveloperForms/master/screenshot.jpg)
