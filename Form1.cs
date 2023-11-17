@@ -112,6 +112,7 @@ namespace PtvDeveloperForms
             };
             fe.MouseLeave += (o, s) => { if (formsMap1.WrappedMap.ToolTip is ToolTip) ((ToolTip)formsMap1.WrappedMap.ToolTip).IsOpen = false; };
         }
+        
         private void AddMarker(Point p, Color color, string toolTip)
         {
             // craetae a pin-style symbol
