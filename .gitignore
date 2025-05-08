@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+scripts/*
+!scripts/generate.ps1
+!scripts/net48-configuration.yaml
+
 # User-specific files
 *.rsuser
 *.suo

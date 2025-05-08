@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using RoutingClient.Model;
 using Ptv.XServer.Controls.Map.Symbols;
 using Ptv.XServer.Controls.Map.Layers.Shapes;
 using Newtonsoft.Json;
@@ -15,12 +14,16 @@ using Color = System.Windows.Media.Color;
 using Colors = System.Windows.Media.Colors;
 using Point = System.Windows.Point;
 using ToolTip = System.Windows.Controls.ToolTip;
+using PTV.Developer.Clients.routing.Api;
+using PTV.Developer.Clients.routing.Client;
+using PTV.Developer.Clients.routing.Model;
+
 
 namespace PtvDeveloperForms
 {
     public partial class Form1 : Form
     {
-        private static readonly string apiKey = ""; // Get your free key at https://developer.myptv.com/;
+        private static readonly string myApiKey = ""; // Get your free key at https://developer.myptv.com/;
         public Form1()
         {
             InitializeComponent();
@@ -29,7 +32,7 @@ namespace PtvDeveloperForms
         private ShapeLayer shapeLayer;
         private async void Form1_Load(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(apiKey))
+            if (string.IsNullOrEmpty(myApiKey))
             {
                 MessageBox.Show("You need an api key! Get your free key at https://developer.myptv.com/");
                 Application.ExitThread();
@@ -60,20 +63,19 @@ namespace PtvDeveloperForms
             // Set the map focus
             formsMap1.SetEnvelope(new MapRectangle(pStart, pDest).Inflate(1.25));
 
-            // Initialize the routing client
-            var routingApi = new RoutingClient.Api.RoutingApi(new RoutingClient.Client.Configuration
+            var apiKey = new Dictionary<string, string>() { ["apiKey"] = myApiKey };
+            var configuration = new Configuration()
             {
-                ApiKey = new Dictionary<string, string>
-                {
-                    ["apiKey"] = apiKey
-                }
-            });
+                ApiKey = apiKey,
+                BasePath = "https://api.myptv.com/routing/v1"
+            };
+            RoutingApi routingApi = new RoutingApi(configuration);
 
             // Calculate the route
             var routeResult = await routingApi.CalculateRoutePostAsync(new RouteRequest(waypoints: new List<Waypoint>
                 {
-                    new Waypoint{OffRoad = new OffRoadWaypoint{Longitude = pStart.X, Latitude = pStart.Y}},
-                    new Waypoint{OffRoad = new OffRoadWaypoint{Longitude = pDest.X, Latitude = pDest.Y}}
+                    new Waypoint{OffRoad = new OffRoadWaypoint(longitude: pStart.X, latitude: pStart.Y)},
+                    new Waypoint{OffRoad = new OffRoadWaypoint(longitude: pDest.X, latitude: pDest.Y)}
                 }),
                 results: new List<Results> {
                     Results.POLYLINE,
@@ -112,7 +114,7 @@ namespace PtvDeveloperForms
             };
             fe.MouseLeave += (o, s) => { if (formsMap1.WrappedMap.ToolTip is ToolTip) ((ToolTip)formsMap1.WrappedMap.ToolTip).IsOpen = false; };
         }
-        
+
         private void AddMarker(Point p, Color color, string toolTip)
         {
             // craetae a pin-style symbol
@@ -151,7 +153,7 @@ namespace PtvDeveloperForms
                             MinZoom = 0,
                             MaxZoom = 22,
                             RequestBuilderDelegate = (x, y, z) =>
-                               $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&apiKey={apiKey}",
+                               $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
                         Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",
@@ -168,7 +170,7 @@ namespace PtvDeveloperForms
                             MinZoom = 0,
                             MaxZoom = 20,
                             RequestBuilderDelegate = (x, y, z) =>
-                               $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={apiKey}",
+                               $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
                         Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",
@@ -185,7 +187,7 @@ namespace PtvDeveloperForms
                             MinZoom = 0,
                             MaxZoom = 20,
                             RequestBuilderDelegate = (x, y, z) =>
-                               $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={apiKey}",
+                               $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
                         Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",
@@ -200,7 +202,7 @@ namespace PtvDeveloperForms
                             MinZoom = 0,
                             MaxZoom = 22,
                             RequestBuilderDelegate = (x, y, z) =>
-                               $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&layers=transport,labels&apiKey={apiKey}",
+                               $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&layers=transport,labels&apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
                         Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",

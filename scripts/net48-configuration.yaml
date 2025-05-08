@@ -1,0 +1,3 @@
+targetFramework: net48
+useDateTimeOffset: true
+optionalEmitDefaultValues: false
