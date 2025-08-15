@@ -156,7 +156,7 @@ namespace PtvDeveloperForms
                                $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
-                        Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",
+                        Copyright = $"© {DateTime.Now.Year} PTV Logistics, HERE",
                         Caption = MapLocalizer.GetString(MapStringId.Background),
                         Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
                     });
@@ -173,7 +173,7 @@ namespace PtvDeveloperForms
                                $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
-                        Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",
+                        Copyright = $"© {DateTime.Now.Year} PTV Logistics, HERE",
                         Caption = MapLocalizer.GetString(MapStringId.Aerials),
                         Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Aerials.png")
                     });
@@ -190,7 +190,7 @@ namespace PtvDeveloperForms
                                $"https://api.myptv.com/rastermaps/v1/satellite-tiles/{z}/{x}/{y}?apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
-                        Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",
+                        Copyright = $"© {DateTime.Now.Year} PTV Logistics, HERE",
                         Caption = MapLocalizer.GetString(MapStringId.Aerials),
                         Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Aerials.png")
                     });
@@ -205,7 +205,7 @@ namespace PtvDeveloperForms
                                $"https://api.myptv.com/rastermaps/v1/image-tiles/{z}/{x}/{y}?style=silkysand&layers=transport,labels&apiKey={myApiKey}",
                         },
                         IsBaseMapLayer = true,
-                        Copyright = $"© {DateTime.Now.Year} PTV Group, HERE",
+                        Copyright = $"© {DateTime.Now.Year} PTV Logistics, HERE",
                         Caption = MapLocalizer.GetString(MapStringId.Background),
                         Icon = ResourceHelper.LoadBitmapFromResource("Ptv.XServer.Controls.Map;component/Resources/Background.png")
                     });
